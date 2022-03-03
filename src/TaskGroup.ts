@@ -4,6 +4,29 @@ import realtime from './realtime'
 import initDb from './database'
 import _ from 'lodash'
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     CreateTaskGroup:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         isPaused:
+ *           type: boolean
+ *           description: When true, tasks in the group cannot be acquired by workers.
+ *           default: false
+ *     TaskGroup:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CreateTaskGroup'
+ *         - type: object
+ *           properties:
+ *             _id:
+ *               type: string
+ *             createdAt:
+ *               type: string
+ */
 export class TaskGroup {
   _id?: ObjectId
   name: string
@@ -78,13 +101,14 @@ export class TaskGroup {
 
   static async retryById(id: ObjectId, remainingAttempts = 2) : Promise<any> {
     const { taskCollection } = await initDb()
-    const result = await taskCollection.updateMany({ remainingAttempts: { $lt: 1 }, isComplete: false, taskGroupId: id }, { 
+    const group = await TaskGroup.findById(id)
+    await taskCollection.updateMany({ remainingAttempts: { $lt: 1 }, isComplete: false, taskGroupId: id }, { 
       $set: {
         remainingAttempts: remainingAttempts
       }
     })
     realtime.emit (id + '', 'group:retry', null)
-    return result
+    return group
   }
 
   static async resetById(id: ObjectId, remainingAttempts = 5) : Promise<TaskGroup> {
