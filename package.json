@@ -2,7 +2,7 @@
   "name": "@orchard-insights/crew",
   "version": "1.0.0",
   "description": "A backend task processing tool for Node.js and beyond.",
-  "main": "dist/src/crew.js",
+  "main": ".dist/src/crew.js",
   "scripts": {
     "dev": "ts-node-dev ./src/express.ts",
     "test": "jest",
@@ -13,7 +13,7 @@
     "cli": "ts-node ./src/index.ts"
   },
   "bin": {
-    "crew": "node ./dist/src/index.js"
+    "crew": "./dist/src/index.js"
   },
   "repository": "git@github.com:orchard-insights/crew.git",
   "author": "ablondeau@orchard-insights.com",
