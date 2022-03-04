@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { program } from 'commander'
 import express from 'express'
 import http from 'http'
