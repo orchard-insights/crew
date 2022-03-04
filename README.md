@@ -21,23 +21,39 @@ Features:
 
 ### CLI
 
-Install the CLI:
+1) Install the CLI:
 
 ```
 npm install --global @orchard-insights/crew
 ```
 
-Run the crew server with
+2) Run the crew server with
 
 ```
 crew start
 ```
 
-Then once it has started you can launch demo workers with
+3) Once crew has started you can launch demo workers with
 
 ```
 crew work
 ```
+
+4) Use the swagger UI to create a task group
+
+![Task Group Create Animation](./docs/create_task_group.gif)
+
+5) Use the swagger UI to create a task
+
+![Task Create Animation](./docs/create_task.gif)
+
+6) Use the swagger UI or console output to monitor the task
+
+![Task Monitor Animation](./docs/monitor_task.gif)
+
+Worker logging in terminal:
+
+![Task Execution Terminal Output](./docs/monitor_task_terminal.png)
 
 ### UI
 
