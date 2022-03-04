@@ -51,6 +51,7 @@ var socket_io_1 = require("socket.io");
 var cors_1 = __importDefault(require("cors"));
 var swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 var swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+var path_1 = __importDefault(require("path"));
 exports.io = null;
 function default_1(options) {
     var _this = this;
@@ -67,7 +68,12 @@ function default_1(options) {
                 version: '1.0.0',
             },
         },
-        apis: ['./src/*.ts']
+        apis: [
+            // dev
+            path_1.default.resolve(__dirname, '*.ts'),
+            // release
+            path_1.default.resolve(__dirname, '../../src/*.ts')
+        ]
     });
     router.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
     // Create websocket server if one wasn't provided

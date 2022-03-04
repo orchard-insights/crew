@@ -11,6 +11,7 @@ import cors from 'cors'
 import CrewDatabase from './CrewDatabase'
 import swaggerUi from 'swagger-ui-express'
 import swaggerJSDoc from 'swagger-jsdoc'
+import path from 'path'
 
 interface CrewOptions {
   server: http.Server,
@@ -34,7 +35,12 @@ export default function (options: CrewOptions) : express.Router {
         version: '1.0.0',
       },
     },
-    apis: ['./src/*.ts']
+    apis: [
+      // dev
+      path.resolve(__dirname, '*.ts'),
+      // release
+      path.resolve(__dirname, '../../src/*.ts')
+    ]
   })
   router.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
