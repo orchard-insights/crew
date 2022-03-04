@@ -13,7 +13,7 @@
     "cli": "ts-node ./src/index.ts"
   },
   "bin": {
-    "orchard-crew": "./dist/src/index.js"
+    "crew": "./dist/src/cli.js"
   },
   "repository": "git@github.com:orchard-insights/crew.git",
   "author": "ablondeau@orchard-insights.com",

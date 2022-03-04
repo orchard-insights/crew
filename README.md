@@ -17,9 +17,9 @@ Features:
 - Merge duplicate tasks
 - Workers can be written in any language
 
-# Quickstart
+## Quickstart
 
-## CLI
+### CLI
 
 Install the CLI:
 
@@ -39,11 +39,11 @@ Then once it has started you can launch demo workers with
 crew work
 ```
 
-## UI
+### UI
 
 The crew UI is in a different project : [https://github.com/orchard-insights/crew-ui](https://github.com/orchard-insights/crew-ui)
 
-## Embed in Express App
+### Embed in Express App
 
 ```
 import crew from '@orchard-insights/crew'
@@ -69,13 +69,13 @@ app.use('/crew', crew({
 }))
 ```
 
-# About
+## About
 
-## API
+### API
 
 Crew exposes an API that can be used by both the user interface and workers.
 
-## Authentication
+### Authentication
 
 Use your own middleware to provide authentication.  For websocket connections, you can provide an authenticateSocket callback:
 
@@ -83,13 +83,13 @@ Use your own middleware to provide authentication.  For websocket connections, y
 TODO
 ```
 
-## About Tree Structure
+### About Tree Structure
 
 The tasks in Crew can be composed to form a tree structure.  Each task can have zero or many parents. Tasks can also have zero or many children.  The parentIds field on Tasks is used to form these relationships.  *A task will never be assigned to a worker until all of it's parent tasks have completed successfully.*
 
 Task Groups are used to break large tasks down into many small tasks.  Every task belongs to a tree.
 
-## About Task Group Reset / Seed Jobs
+### About Task Group Reset / Seed Jobs
 
 Task Groups can be re-set which will allow them to be re-executed.  This should only be used for developing / debugging workers. 
 
@@ -97,17 +97,17 @@ Tasks flagged with isSeed=True, are the only tasks that are retained when a task
 
 This is used in task groups where an initial seed task creates lots of other child tasks.  However, In task groups where there aren't any isSeed tasks, all the tasks will be reset and none will be deleted.
 
-## About Continuations
+### About Continuations
 
 A continuation occurs when execution of a task results in additional tasks.  Continuation tasks are always children of the task that created them.
 
-## About Duplication Merge
+### About Duplication Merge
 
 Crew can automatically complete tasks that are identical.  The primary use case for this feature is when a large volume of nightly tasks fails to complete before the next night's run.  Instead of creating an even larger bottleneck duplicate tasks can be merged instead of repeated.
 
 The "key" field is used for duplication merge.  Whenever Crew assigns a task it will find any other tasks that have the same key in the same channel. The matching tasks will have assignedTo set to indicate that they are also in-progress.  Whenever Crew is completing a task it will again look for any other tasks that have the same key in the same channel.  The matching tasks will receive the same output or error.
 
-## About Workers
+### About Workers
 
 Each worker operates within a channel such as "send_welcome_email". Workers ask for tasks by calling the "acquire" API endpoint.  Each request to this endpoint must contain a unique worker id and the channel name that the worker is requesting work from.  If a task is available it will be returned to the worker along with the output of any of the task's parents.  The returned task will be locked by the worker via the assignedTo field.
 
@@ -121,13 +121,13 @@ Workers should follow these rules:
 * If a worker encounters an error it must pass an "error" field to the release API endpoint and provide a meaningful error message.
 * When a worker completes a job it must use the release API endpoint and provide meaningful output.
 
-## About Workgroups
+### About Workgroups
 
 Crew is designed to help manage rate limit errors via workgroups.  When a rate limit error is encountered all the tasks within a workgroup can be delayed by a specific amount of time by passing a "workgroupDelayInSeconds" parameter to the release API endpoint.  Since workgroups will often be organized around a specific API key it is recommended that you use an md5 hash of the API key instead of the key itself when creating workgroup names.
 
-# Development
+## Development
 
-## GitHub Codespaces Development
+### GitHub Codespaces Development
 
 This project contans a devcontainer that can be used for development with [GitHub Codespaces](https://github.com/codespaces).
 
@@ -162,11 +162,11 @@ Note: Node processes seem to hang in codespaces.  You can use the following comm
 netstat -nlp|grep 3001
 ```
 
-## Local Development
+### Local Development
 
 To develop Crew you'll only need Node.js and MongoDB.  Follow these 6 steps to get everything up and running locally:
 
-### 1. MongoDB
+#### 1. MongoDB
 
 The easiest way to run MongoDB is with Docker Desktop.
 
@@ -181,7 +181,7 @@ On linux:
 docker run --rm --name orchard-crew-mongo -p 27017:27017 -v /home/aaron/Volumes/orchard-crew-mongodb:/data/db -d mongo
 ```
 
-### 2. Environment Variables
+#### 2. Environment Variables
 
 Next, create a file called .env with the following contents:
 
@@ -199,7 +199,7 @@ CREW_EXPIRED_GROUP_INTERVAL_IN_DAYS=7
 CREW_GRACEFUL_SHUTDOWN=yes
 ```
 
-### 3. Node.js
+#### 3. Node.js
 
 Start by running yarn install:
 
@@ -220,13 +220,13 @@ yarn cli start
 yarn cli work
 ```
 
-### 4. Run tests
+#### 4. Run tests
 
 ```
 yarn test
 ```
 
-## Environment variables
+### Environment variables
 
 **CREW_MONGO_URI** : Mongod connection string. You can set this to "MEMORY" to use an ephemeral local instance.
 
@@ -250,7 +250,7 @@ yarn test
 
 **CREW_API_BASE_URL** : For demo workers.  Tells them where the API is.  Include a trailing /, like this "http://localhost:3000/".
 
-## Running the Python example workers
+### Running the Python example workers
 
 Begin by creating a virtual environment
 
