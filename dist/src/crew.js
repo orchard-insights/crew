@@ -39,7 +39,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.io = void 0;
 var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
@@ -52,7 +51,7 @@ var cors_1 = __importDefault(require("cors"));
 var swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 var swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 var path_1 = __importDefault(require("path"));
-exports.io = null;
+var realtime_1 = __importDefault(require("./realtime"));
 function default_1(options) {
     var _this = this;
     var _a;
@@ -78,13 +77,14 @@ function default_1(options) {
     router.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
     // Create websocket server if one wasn't provided
     if (!options.io) {
-        exports.io = new socket_io_1.Server(options.server, {
+        var io = new socket_io_1.Server(options.server, {
             cors: {
                 origin: '*',
                 methods: ["GET", "POST"]
             }
         });
-        options.io = exports.io;
+        options.io = io;
+        realtime_1.default.io = io;
     }
     (_a = options.io) === null || _a === void 0 ? void 0 : _a.on('connection', function (socket) {
         socket.on('watchTaskGroup', function (msg) { return __awaiter(_this, void 0, void 0, function () {
@@ -163,7 +163,10 @@ function default_1(options) {
         // Home
         router.get('/', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                res.send('<html><body>Hi!  I\'m Crew.  You\'ll need to use my <a href="./api-docs">API</a> or my UI to see what is going on.</body></html>');
+                if (!req.originalUrl.endsWith('/')) {
+                    return [2 /*return*/, res.redirect(req.originalUrl + '/')];
+                }
+                res.send("<html><body>Hi!  I'm Crew.  You'll need to use my <a href=\"./api-docs\">API</a> or my UI to see what is going on.</body></html>");
                 return [2 /*return*/];
             });
         }); }));

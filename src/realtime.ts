@@ -1,11 +1,17 @@
-import { io } from './crew'
+import { Server } from 'socket.io'
 
-// This is a helper function that makes it easy to send events to clients via a websocket (and mock unit tests!)
-export default {
+// This class helps send events to clients via a websocket (and mock unit tests!)
+class Realtime {
+  io: Server | null
+
   emit(room: string, event: string, data: any) {
     // console.log('~~ emitting', room, event, data)
-    if (io) {
-      io.to(room).emit(event, data)
+    if (this.io) {
+      this.io.to(room).emit(event, data)
     }
   }
 }
+
+const emitter = new Realtime()
+
+export default emitter

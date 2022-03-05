@@ -12,14 +12,13 @@ import CrewDatabase from './CrewDatabase'
 import swaggerUi from 'swagger-ui-express'
 import swaggerJSDoc from 'swagger-jsdoc'
 import path from 'path'
+import emitter from './realtime'
 
 interface CrewOptions {
   server: http.Server,
   io?: Server,
   authenticateSocket?: (socket: Socket, message: any) => boolean
 }
-
-let io : Server | null = null
 
 export default function (options: CrewOptions) : express.Router {
   // Crew uses its own router
@@ -46,13 +45,14 @@ export default function (options: CrewOptions) : express.Router {
 
   // Create websocket server if one wasn't provided
   if (!options.io) {
-    io = new Server(options.server, {
+    const io = new Server(options.server, {
       cors: {
         origin: '*',
         methods: ["GET", "POST"]
       }
     })
     options.io = io
+    emitter.io = io
   }
 
   options.io?.on('connection', (socket: Socket) => {
