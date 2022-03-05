@@ -64,16 +64,20 @@ The crew UI is in a different project : [https://github.com/orchard-insights/cre
 ```
 import crew from '@orchard-insights/crew'
 
-// ... Setup your express app
-
 const app = express()
 const server = http.createServer(app)
+
+// Setup your express app ...
 
 // Then mount crew
 
 app.use('/crew', crew({
   server
 }))
+
+server.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
 ```
 
 Note that Crew can provide realtime UI updates via websockets so access to the server instance is necessary.  You can also provide an "io" option to the crew config if you already have socket.io instantiated in your server.
@@ -96,7 +100,31 @@ Crew exposes an API that can be used by both the user interface and workers.
 Use your own middleware to provide authentication.  For websocket connections, you can provide an authenticateSocket callback:
 
 ```
-TODO
+const express = require('express')
+const crew = require('@orchard-insights/crew')
+const http = require('http')
+const basicAuth = require('express-basic-auth')
+
+const port = 3000
+const app = express()
+const server = http.createServer(app)
+
+app.use(basicAuth({
+  challenge: true,
+  users: { 'admin': 'supersecret' }
+}))
+
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.use('/crew', crew({
+  server
+}))
+
+server.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
 ```
 
 ### About Tree Structure

@@ -19,7 +19,7 @@ interface CrewOptions {
   authenticateSocket?: (socket: Socket, message: any) => boolean
 }
 
-export let io : Server | null = null
+let io : Server | null = null
 
 export default function (options: CrewOptions) : express.Router {
   // Crew uses its own router
@@ -118,7 +118,10 @@ export default function (options: CrewOptions) : express.Router {
     // Home
     router.get('/', unhandledExceptionsHandler(
       async (req, res) => {
-      res.send('<html><body>Hi!  I\'m Crew.  You\'ll need to use my <a href="./api-docs">API</a> or my UI to see what is going on.</body></html>')
+      if (!req.originalUrl.endsWith('/')) {
+        return res.redirect(req.originalUrl + '/')
+      }
+      res.send(`<html><body>Hi!  I'm Crew.  You\'ll need to use my <a href="./api-docs">API</a> or my UI to see what is going on.</body></html>`)
     }))
 
     /**

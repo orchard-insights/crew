@@ -13,7 +13,7 @@ const app = express()
 const server = http.createServer(app)
 
 // All your other express stuff goes here!
-app.use('/', crew({
+app.use('/crew', crew({
     server
   })
 )
