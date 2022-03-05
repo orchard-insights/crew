@@ -101,7 +101,7 @@ Use your own middleware to provide authentication.  For websocket connections, y
 
 ```
 const express = require('express')
-const crew = require('@orchard-insights/crew')
+const crew = require('@orchard-insights/crew').default
 const http = require('http')
 const basicAuth = require('express-basic-auth')
 
