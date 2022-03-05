@@ -13,7 +13,7 @@ var WorkerServer = /** @class */ (function () {
         this.server = http_1.default.createServer(this.app);
         this.app.use((0, cors_1.default)());
         this.app.use(express_1.default.json());
-        var port = parseInt(process.env.CREW_WORKER_PORT || '3001');
+        var port = parseInt(process.env.CREW_WORKER_PORT || '3002');
         this.app.listen(port, function () { return console.log("worker server listening on port " + port + "!"); });
     }
     return WorkerServer;

@@ -12,7 +12,7 @@ export default class WorkerServer {
     this.app.use(cors())
     this.app.use(express.json())
 
-    const port = parseInt(process.env.CREW_WORKER_PORT || '3001')
+    const port = parseInt(process.env.CREW_WORKER_PORT || '3002')
     this.app.listen(port, () => console.log(`worker server listening on port ${port}!`))
   }
 }
