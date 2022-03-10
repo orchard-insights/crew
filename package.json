@@ -1,6 +1,6 @@
 {
   "name": "@orchard-insights/crew",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A backend task processing tool for Node.js and beyond.",
   "main": "./dist/src/crew.js",
   "scripts": {
