@@ -39,12 +39,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Task = exports.TaskGroup = exports.crew = void 0;
 var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
 var database_1 = __importDefault(require("./database"));
 var TaskGroup_1 = require("./TaskGroup");
+Object.defineProperty(exports, "TaskGroup", { enumerable: true, get: function () { return TaskGroup_1.TaskGroup; } });
 var Task_1 = require("./Task");
+Object.defineProperty(exports, "Task", { enumerable: true, get: function () { return Task_1.Task; } });
 var node_cron_1 = __importDefault(require("node-cron"));
 var socket_io_1 = require("socket.io");
 var cors_1 = __importDefault(require("cors"));
@@ -52,7 +55,7 @@ var swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 var swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 var path_1 = __importDefault(require("path"));
 var realtime_1 = __importDefault(require("./realtime"));
-function default_1(options) {
+function crew(options) {
     var _this = this;
     var _a;
     // Crew uses its own router
@@ -1190,4 +1193,5 @@ function default_1(options) {
     }
     return router;
 }
-exports.default = default_1;
+exports.crew = crew;
+exports.default = crew;

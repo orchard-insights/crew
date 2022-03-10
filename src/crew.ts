@@ -20,7 +20,7 @@ interface CrewOptions {
   authenticateSocket?: (socket: Socket, message: any) => boolean
 }
 
-export default function (options: CrewOptions) : express.Router {
+function crew (options: CrewOptions) : express.Router {
   // Crew uses its own router
   const router = express.Router()
   router.use(cors())
@@ -1009,4 +1009,12 @@ export default function (options: CrewOptions) : express.Router {
     })
   }
   return router
+}
+
+export default crew
+
+export {
+  crew,
+  TaskGroup,
+  Task,
 }

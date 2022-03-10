@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var commander_1 = require("commander");
 var express_1 = __importDefault(require("express"));
 var http_1 = __importDefault(require("http"));
-var crew_1 = __importDefault(require("./crew"));
+var crew_1 = require("./crew");
 var WorkerGroup_1 = __importDefault(require("../demo/js/WorkerGroup"));
 var WorkerA_1 = __importDefault(require("../demo/js/WorkerA"));
 var WorkerB_1 = __importDefault(require("../demo/js/WorkerB"));
@@ -26,7 +26,7 @@ commander_1.program.command('start')
     var app = (0, express_1.default)();
     var server = http_1.default.createServer(app);
     // Add crew with no auth
-    app.use('/', (0, crew_1.default)({
+    app.use('/', (0, crew_1.crew)({
         server: server
     }));
     var port = parseInt(process.env.PORT || '3000');

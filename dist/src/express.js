@@ -9,12 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require('dotenv').config();
 var express_1 = __importDefault(require("express"));
 var http_1 = __importDefault(require("http"));
-var crew_1 = __importDefault(require("./crew"));
+var crew_1 = require("./crew");
 // Setup express
 var app = (0, express_1.default)();
 var server = http_1.default.createServer(app);
 // All your other express stuff goes here!
-app.use('/', (0, crew_1.default)({
+app.use('/', (0, crew_1.crew)({
     server: server
 }));
 var port = parseInt(process.env.PORT || '3000');

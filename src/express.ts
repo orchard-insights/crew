@@ -6,7 +6,7 @@ require('dotenv').config()
 
 import express from 'express'
 import http from 'http'
-import crew from './crew'
+import { crew } from './crew'
 
 // Setup express
 const app = express()

@@ -2,7 +2,7 @@
 import { program } from 'commander'
 import express from 'express'
 import http from 'http'
-import crew from './crew'
+import { crew } from './crew'
 import WorkerGroup from '../demo/js/WorkerGroup'
 import WorkerA from '../demo/js/WorkerA'
 import WorkerB from '../demo/js/WorkerB'

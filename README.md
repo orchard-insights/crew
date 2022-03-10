@@ -62,7 +62,7 @@ The crew UI is in a different project : [https://github.com/orchard-insights/cre
 ### Embed in Express App
 
 ```
-import crew from '@orchard-insights/crew'
+import { crew } from '@orchard-insights/crew'
 
 const app = express()
 const server = http.createServer(app)
@@ -101,7 +101,7 @@ Use your own middleware to provide authentication.  For websocket connections, y
 
 ```
 const express = require('express')
-const crew = require('@orchard-insights/crew').default
+const { crew } = require('@orchard-insights/crew')
 const http = require('http')
 const basicAuth = require('express-basic-auth')
 
