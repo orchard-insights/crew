@@ -400,7 +400,6 @@ export class Task {
     await taskCollection.updateOne({ _id: id }, { 
       $set: {
         isComplete: false,
-        parentsComplete: false,
         errors: [],
         output: null,
         runAfter: null,

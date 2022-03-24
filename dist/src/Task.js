@@ -549,7 +549,6 @@ var Task = /** @class */ (function () {
                         return [4 /*yield*/, taskCollection.updateOne({ _id: id }, {
                                 $set: {
                                     isComplete: false,
-                                    parentsComplete: false,
                                     errors: [],
                                     output: null,
                                     runAfter: null,
