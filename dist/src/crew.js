@@ -93,6 +93,9 @@ function crew(options) {
         options.io = io;
         realtime_1.default.io = io;
     }
+    else {
+        realtime_1.default.io = options.io;
+    }
     (_a = options.io) === null || _a === void 0 ? void 0 : _a.on('connection', function (socket) {
         socket.on('watchTaskGroup', function (msg) { return __awaiter(_this, void 0, void 0, function () {
             var socketAuthenticated;

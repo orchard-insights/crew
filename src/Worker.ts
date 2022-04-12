@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import uniqid from 'uniqid'
 import retry from 'async-retry'
 import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/dynamic'
@@ -17,6 +17,9 @@ export default abstract class Worker {
 
   // Crew api url and credentials
   apiBaseUrl = process.env.CREW_API_BASE_URL || 'http://localhost:3000/'
+
+  // Access token to add to acquire and release tasks
+  acquireReleaseAxiosRequestConfig : AxiosRequestConfig = {}
 
   // The currently assigned task
   task: Task | null
@@ -99,7 +102,7 @@ export default abstract class Worker {
       // Ask the api for a new task in my channel
       const acquireResponse = await axios.post(this.apiBaseUrl + `api/v1/channel/${this.channel}/acquire`, {
         workerId: this.id
-      })
+      }, this.acquireReleaseAxiosRequestConfig)
       if (acquireResponse.data.task) {
         this.pauseWorkgroupSeconds = 0
         this.task = acquireResponse.data.task as Task
@@ -122,7 +125,7 @@ export default abstract class Worker {
                   releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds
                 }
                 if (this.task) {
-                  await axios.post(this.apiBaseUrl + `api/v1/task/${this.task._id}/release`, releaseData)
+                  await axios.post(this.apiBaseUrl + `api/v1/task/${this.task._id}/release`, releaseData, this.acquireReleaseAxiosRequestConfig)
                 }
                 console.log(`~~ ${this.channel} (${this.id}) complete task ${this.task._id} success`)
                 // Signal that we should immediately check for new work
@@ -160,7 +163,7 @@ export default abstract class Worker {
             if (this.pauseWorkgroupSeconds > 0) {
               releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds
             }
-            await axios.post(this.apiBaseUrl + `api/v1/task/${this.task._id}/release`, releaseData)
+            await axios.post(this.apiBaseUrl + `api/v1/task/${this.task._id}/release`, releaseData, this.acquireReleaseAxiosRequestConfig)
             console.log(`~~ ${this.channel} (${this.id}) fail task ${this.task._id} success`)
           }
         }

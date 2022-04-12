@@ -47,6 +47,8 @@ var Worker = /** @class */ (function () {
     function Worker() {
         // Crew api url and credentials
         this.apiBaseUrl = process.env.CREW_API_BASE_URL || 'http://localhost:3000/';
+        // Access token to add to acquire and release tasks
+        this.acquireReleaseAxiosRequestConfig = {};
         // Subclasses should set this to the desired delay when they encounter rate limit responses or errors
         this.pauseWorkgroupSeconds = 0;
         // Goes with setInterval to poll for new tasks
@@ -152,7 +154,7 @@ var Worker = /** @class */ (function () {
                         console.log("~~ " + this.channel + " (" + this.id + ") asking for task");
                         return [4 /*yield*/, axios_1.default.post(this.apiBaseUrl + ("api/v1/channel/" + this.channel + "/acquire"), {
                                 workerId: this.id
-                            })];
+                            }, this.acquireReleaseAxiosRequestConfig)];
                     case 2:
                         acquireResponse = _a.sent();
                         if (!acquireResponse.data.task) return [3 /*break*/, 6];
@@ -181,7 +183,7 @@ var Worker = /** @class */ (function () {
                                                 releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds;
                                             }
                                             if (!this.task) return [3 /*break*/, 2];
-                                            return [4 /*yield*/, axios_1.default.post(this.apiBaseUrl + ("api/v1/task/" + this.task._id + "/release"), releaseData)];
+                                            return [4 /*yield*/, axios_1.default.post(this.apiBaseUrl + ("api/v1/task/" + this.task._id + "/release"), releaseData, this.acquireReleaseAxiosRequestConfig)];
                                         case 1:
                                             _a.sent();
                                             _a.label = 2;
@@ -230,7 +232,7 @@ var Worker = /** @class */ (function () {
                                             if (this.pauseWorkgroupSeconds > 0) {
                                                 releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds;
                                             }
-                                            return [4 /*yield*/, axios_1.default.post(this.apiBaseUrl + ("api/v1/task/" + this.task._id + "/release"), releaseData)];
+                                            return [4 /*yield*/, axios_1.default.post(this.apiBaseUrl + ("api/v1/task/" + this.task._id + "/release"), releaseData, this.acquireReleaseAxiosRequestConfig)];
                                         case 1:
                                             _a.sent();
                                             console.log("~~ " + this.channel + " (" + this.id + ") fail task " + this.task._id + " success");

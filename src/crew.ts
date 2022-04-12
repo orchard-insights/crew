@@ -57,6 +57,8 @@ function crew (options: CrewOptions) : express.Router {
     })
     options.io = io
     emitter.io = io
+  } else {
+    emitter.io = options.io
   }
 
   options.io?.on('connection', (socket: Socket) => {

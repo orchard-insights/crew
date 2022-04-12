@@ -1,3 +1,4 @@
+import { AxiosRequestConfig } from 'axios';
 import { SetIntervalAsyncTimer } from 'set-interval-async/dynamic';
 import Task from './Task';
 import TaskResponse from './TaskResponse';
@@ -6,6 +7,7 @@ export default abstract class Worker {
     channel: string;
     name: string;
     apiBaseUrl: string;
+    acquireReleaseAxiosRequestConfig: AxiosRequestConfig;
     task: Task | null;
     pauseWorkgroupSeconds: number;
     workInterval: SetIntervalAsyncTimer | null;
