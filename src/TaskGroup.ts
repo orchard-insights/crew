@@ -27,7 +27,7 @@ import _ from 'lodash'
  *             createdAt:
  *               type: string
  */
-export class TaskGroup {
+export default class TaskGroup {
   _id?: ObjectId
   name: string
   isPaused: boolean

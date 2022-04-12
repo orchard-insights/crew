@@ -2,12 +2,8 @@ import axios from 'axios'
 import uniqid from 'uniqid'
 import retry from 'async-retry'
 import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/dynamic'
-import { Task } from './Task'
-
-export interface JobResponse {
-  output: any,
-  children?: any[]
-}
+import Task from './Task'
+import TaskResponse from './TaskResponse'
 
 export default abstract class Worker {
   // A unique id for the worker
@@ -80,7 +76,9 @@ export default abstract class Worker {
     console.log(`~~ ${this.channel} (${this.id}) stopWork`)
     // stop looking for new tasks:
     if (this.workInterval) {
-      await clearIntervalAsync(this.workInterval)
+      return clearIntervalAsync(this.workInterval)
+    } else {
+      return Promise.resolve()
     }
   }
 
@@ -88,7 +86,7 @@ export default abstract class Worker {
   abstract cleanup() : Promise<void>
 
   // Subclasses implement this method to do their thing
-  abstract executeJob(data : any, parents: any[]) : Promise<JobResponse>
+  abstract executeTask(data : any, parents: any[]) : Promise<TaskResponse>
 
   // Let worker group know if we are healthy or not
   abstract isHealthy() : Promise<boolean>
@@ -108,7 +106,7 @@ export default abstract class Worker {
         if (this.task && this.task._id) {
           console.log(`~~ ${this.channel} (${this.id}) acquired task ${this.task._id}`)
           // If I got a task, execute it
-          const executeResponse = await this.executeJob(acquireResponse.data.task.input, acquireResponse.data.parents)
+          const executeResponse = await this.executeTask(acquireResponse.data.task.input, acquireResponse.data.parents)
 
           // Once the work is completed, let the API know in a resilient way
           const restart = await retry(
@@ -147,7 +145,7 @@ export default abstract class Worker {
         }
       }
     } catch (error) {
-      // Something went wrong, usually in executeJob
+      // Something went wrong, usually in executeTask
       console.error(error)
 
       // Let the API know about the error in a resilient way

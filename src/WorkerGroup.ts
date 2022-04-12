@@ -30,15 +30,14 @@ export default class WorkerGroup {
   constructor(workers: Worker[]) {
     this.workers = workers
 
-    process.on('SIGTERM', () => {
-      console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString())
-      this.startShutdown()
-    })
-    
-    process.on('SIGINT', () => {
-      console.info('Got SIGINT. Graceful shutdown start', new Date().toISOString())
-      this.startShutdown()
-    })
+    const signals = ['SIGTERM', 'SIGINT']
+
+    for (const signal of signals) {
+      process.once(signal, async (signalOrEvent) => {
+        console.info('~~ Got ' + signalOrEvent + '. Graceful shutdown started.', new Date().toISOString())
+        await this.startShutdown()
+      })
+    }
 
     if (process.env.CREW_WORKER_DISABLE_EXPRESS !== 'yes') {
       this.server = new WorkerServer()
@@ -81,24 +80,32 @@ export default class WorkerGroup {
   }
 
   async startShutdown() {
-    if (this.shuttingDown) {
-      return
+    try {
+      if (this.shuttingDown) {
+        return
+      }
+      this.shuttingDown = true
+      const stopPromises = []
+
+      // Ask each worker to gracefully shutdown
+      for (const worker of this.workers) {
+        const stopPromise = worker.stopWork()
+        console.log('~~ ask stop', worker.name, stopPromise)
+        stopPromises.push(stopPromise)
+      }
+
+      // Set a timeout to force process to exit if workers take too long to shutdown
+      this.killTimeout = setTimeout(async () => {
+        console.warn('~~ Group graceful shutdown failed - force shutdown!')
+        await finalizeShutdown(this.server, this.workers, null)
+      }, (parseInt(process.env.CREW_SHUTDOWN_TIMEOUT_IN_MILLISECONDS || '30000')))
+
+      await Promise.all(stopPromises)
+      console.log('~~ All workers stopped.')
+
+      await finalizeShutdown(this.server, this.workers, this.killTimeout)
+    } catch (e) {
+      console.error('startShutdown failed :', e)
     }
-    this.shuttingDown = true
-    const stopPromises = []
-    // Ask each worker to gracefully shutdown
-    for (const worker of this.workers) {
-      stopPromises.push(worker.stopWork())
-    }
-
-    // Set a timeout to force process to exit if workers take too long to shutdown
-    this.killTimeout = setTimeout(async () => {
-      console.warn('~~ Group graceful shutdown failed - force shutdown!')
-      await finalizeShutdown(this.server, this.workers, null)
-    }, (parseInt(process.env.CREW_SHUTDOWN_TIMEOUT_IN_MILLISECONDS || '30000')))
-
-    await Promise.all(stopPromises)
-
-    await finalizeShutdown(this.server, this.workers, this.killTimeout)
   }
 }

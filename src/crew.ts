@@ -2,10 +2,12 @@ import express from 'express'
 import terminus from '@godaddy/terminus'
 import { MongoClient, ObjectId } from 'mongodb'
 import initDb from './database'
-import { TaskGroup } from './TaskGroup'
-import { Task } from './Task'
+import TaskGroup from './TaskGroup'
+import Task from './Task'
+import TaskChild from './TaskChild'
 import Worker from './Worker'
 import WorkerGroup from './WorkerGroup'
+import TaskResponse from './TaskResponse'
 import cron from 'node-cron'
 import { Socket, Server } from 'socket.io'
 import http from 'http'
@@ -1020,5 +1022,7 @@ export {
   TaskGroup,
   Task,
   Worker,
-  WorkerGroup
+  WorkerGroup,
+  TaskResponse,
+  TaskChild
 }

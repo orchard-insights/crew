@@ -2,8 +2,8 @@ jest.mock('./database')
 jest.mock('./realtime')
 
 import initDb from "./database"
-import { Task } from "./Task"
-import { TaskGroup } from "./TaskGroup"
+import Task from "./Task"
+import TaskGroup from "./TaskGroup"
 import realtime from './realtime'
 
 beforeEach(async () => {

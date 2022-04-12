@@ -1,29 +1,10 @@
 import { ObjectId } from "mongodb"
 import _ from 'lodash'
 import { DateTime } from 'luxon'
-import { TaskGroup } from "./TaskGroup"
+import TaskGroup from "./TaskGroup"
+import TaskChild from "./TaskChild"
 import realtime from './realtime'
 import initDb from './database'
-
-// When a task returns a continuation, each child must follow this interface
-interface TaskChild {
-  _id?: ObjectId         // Will be defined after child is created
-  taskGroupId?: ObjectId // Will be defined after child is created
-  _child_id?: number,
-  _parent_ids?: number[],
-  name: string
-  channel: string
-  workgroup?: string | null
-  input?: object | null
-  remainingAttempts?: number
-  priority?: number
-  runAfter?: Date | null
-  progressWeight?: number
-  isSeed?: boolean
-  key?: string | null
-  parentIds?: ObjectId[]
-  isPaused?: boolean
-}
 
 /**
  * @openapi
@@ -191,7 +172,7 @@ interface TaskChild {
  *               type: string
  *               description: The timestamp when the task was acquired.
  */
-export class Task {
+export default class Task {
   _id?: ObjectId
   taskGroupId: ObjectId
   name: string

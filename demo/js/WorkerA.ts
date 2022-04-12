@@ -1,5 +1,5 @@
 import Worker from '../../src/Worker'
-import { JobResponse } from '../../src/Worker'
+import TaskResponse from '../../src/TaskResponse'
 
 // This worker is here as an example, and for testing only - do not deploy
 
@@ -7,7 +7,7 @@ export default class WorkerA extends Worker {
   name = "Worker A"
   channel = "worker_a"
 
-  public async executeJob (data: any): Promise<JobResponse> {
+  public async executeTask (data: any): Promise<TaskResponse> {
     if (data && data.throw) {
       throw new Error(data.throw)
     } else {
