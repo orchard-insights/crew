@@ -42,8 +42,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 jest.mock('./database');
 jest.mock('./realtime');
 var database_1 = __importDefault(require("./database"));
-var Task_1 = require("./Task");
-var TaskGroup_1 = require("./TaskGroup");
+var Task_1 = __importDefault(require("./Task"));
+var TaskGroup_1 = __importDefault(require("./TaskGroup"));
 var realtime_1 = __importDefault(require("./realtime"));
 var uniqid_1 = __importDefault(require("uniqid"));
 beforeEach(function () { return __awaiter(void 0, void 0, void 0, function () {
@@ -89,7 +89,7 @@ test('can create task group and task', function () { return __awaiter(void 0, vo
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -97,7 +97,7 @@ test('can create task group and task', function () { return __awaiter(void 0, vo
                 expect(group._id).not.toBeNull();
                 expect(group._id).not.toBeUndefined();
                 if (!group._id) return [3 /*break*/, 3];
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'You can do it',
                         channel: 'test_a'
                     })];
@@ -118,7 +118,7 @@ test('can update task', function () { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -126,7 +126,7 @@ test('can update task', function () { return __awaiter(void 0, void 0, void 0, f
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Wrong task name',
                         channel: 'test_a'
                     })];
@@ -135,10 +135,10 @@ test('can update task', function () { return __awaiter(void 0, void 0, void 0, f
                 if (!task || !task._id) {
                     throw new Error('No task!');
                 }
-                return [4 /*yield*/, Task_1.Task.updateById(task._id, { name: 'Right task name' })];
+                return [4 /*yield*/, Task_1.default.updateById(task._id, { name: 'Right task name' })];
             case 3:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findById(task._id)];
+                return [4 /*yield*/, Task_1.default.findById(task._id)];
             case 4:
                 updated = _a.sent();
                 if (!updated || !updated._id) {
@@ -155,7 +155,7 @@ test('can acquire and complete task', function () { return __awaiter(void 0, voi
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -163,14 +163,14 @@ test('can acquire and complete task', function () { return __awaiter(void 0, voi
                 if (!group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'You can do it',
                         channel: 'test_a'
                     })];
             case 2:
                 task = _a.sent();
                 workerId = (0, uniqid_1.default)();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('test_a', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('test_a', workerId)];
             case 3:
                 acquired = _a.sent();
                 if (!acquired || !acquired._id) {
@@ -179,7 +179,7 @@ test('can acquire and complete task', function () { return __awaiter(void 0, voi
                 expect(acquired._id).toEqual(task._id);
                 expect(acquired.assignedTo).toEqual(workerId);
                 expect(acquired.assignedAt).not.toBeNull();
-                return [4 /*yield*/, Task_1.Task.release(acquired._id, workerId, null, { done: 'yes' })];
+                return [4 /*yield*/, Task_1.default.release(acquired._id, workerId, null, { done: 'yes' })];
             case 4:
                 completed = _a.sent();
                 if (!completed || !completed._id) {
@@ -195,7 +195,7 @@ test('new node is paused in paused group', function () { return __awaiter(void 0
     var group, task;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+            case 0: return [4 /*yield*/, TaskGroup_1.default.fromData({
                     name: 'Paused Group',
                     isPaused: true
                 })];
@@ -205,7 +205,7 @@ test('new node is paused in paused group', function () { return __awaiter(void 0
                     throw new Error('No group');
                 }
                 expect(group.isPaused).toBeTruthy();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I should be paused too',
                         channel: 'test_a'
                     })];
@@ -225,7 +225,7 @@ test('can acquire and complete task with an error', function () { return __await
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Error Group'
                     })];
             case 1:
@@ -233,7 +233,7 @@ test('can acquire and complete task with an error', function () { return __await
                 if (!group || !group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'You can do it',
                         channel: 'test_a',
                         errorDelayInSeconds: 0
@@ -241,7 +241,7 @@ test('can acquire and complete task with an error', function () { return __await
             case 2:
                 task = _a.sent();
                 workerId = (0, uniqid_1.default)();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('test_a', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('test_a', workerId)];
             case 3:
                 acquired = _a.sent();
                 if (!acquired || !acquired._id) {
@@ -250,7 +250,7 @@ test('can acquire and complete task with an error', function () { return __await
                 expect(acquired._id).toEqual(task._id);
                 expect(acquired.assignedTo).toEqual(workerId);
                 expect(acquired.assignedAt).not.toBeNull();
-                return [4 /*yield*/, Task_1.Task.release(acquired._id, workerId, { oops: 'I died' })];
+                return [4 /*yield*/, Task_1.default.release(acquired._id, workerId, { oops: 'I died' })];
             case 4:
                 errored = _a.sent();
                 if (!errored || !errored._id) {
@@ -259,7 +259,7 @@ test('can acquire and complete task with an error', function () { return __await
                 expect(errored.isComplete).toBeFalsy();
                 expect(errored.remainingAttempts).toEqual(4);
                 expect(errored.errors).toHaveLength(1);
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('test_a', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('test_a', workerId)];
             case 5:
                 acquiredAfterError = _a.sent();
                 if (!acquiredAfterError || !acquiredAfterError._id) {
@@ -278,7 +278,7 @@ test('can reset task', function () { return __awaiter(void 0, void 0, void 0, fu
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Reset Group'
                     })];
             case 1:
@@ -286,7 +286,7 @@ test('can reset task', function () { return __awaiter(void 0, void 0, void 0, fu
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am the seed',
                         isSeed: true,
                         channel: 'completed'
@@ -309,10 +309,10 @@ test('can reset task', function () { return __awaiter(void 0, void 0, void 0, fu
                         } })];
             case 4:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.resetById(completedTask._id, 2)];
+                return [4 /*yield*/, Task_1.default.resetById(completedTask._id, 2)];
             case 5:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findById(completedTask._id)];
+                return [4 /*yield*/, Task_1.default.findById(completedTask._id)];
             case 6:
                 resetTask = _a.sent();
                 expect(resetTask._id).toEqual(completedTask._id);
@@ -328,7 +328,7 @@ test('can retry task', function () { return __awaiter(void 0, void 0, void 0, fu
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Retry Group'
                     })];
             case 1:
@@ -336,7 +336,7 @@ test('can retry task', function () { return __awaiter(void 0, void 0, void 0, fu
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I need to be retried',
                         channel: 'retry'
                     })];
@@ -354,10 +354,10 @@ test('can retry task', function () { return __awaiter(void 0, void 0, void 0, fu
                         } })];
             case 4:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.retryById(failedTask._id, 3)];
+                return [4 /*yield*/, Task_1.default.retryById(failedTask._id, 3)];
             case 5:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findById(failedTask._id)];
+                return [4 /*yield*/, Task_1.default.findById(failedTask._id)];
             case 6:
                 retriedTask = _a.sent();
                 expect(retriedTask._id).toEqual(failedTask._id);
@@ -373,7 +373,7 @@ test('can complete with children', function () { return __awaiter(void 0, void 0
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -381,14 +381,14 @@ test('can complete with children', function () { return __awaiter(void 0, void 0
                 if (!group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'You can do it',
                         channel: 'test_a'
                     })];
             case 2:
                 task = _a.sent();
                 workerId = (0, uniqid_1.default)();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('test_a', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('test_a', workerId)];
             case 3:
                 acquired = _a.sent();
                 if (!acquired || !acquired._id) {
@@ -397,7 +397,7 @@ test('can complete with children', function () { return __awaiter(void 0, void 0
                 expect(acquired._id).toEqual(task._id);
                 expect(acquired.assignedTo).toEqual(workerId);
                 expect(acquired.assignedAt).not.toBeNull();
-                return [4 /*yield*/, Task_1.Task.release(acquired._id, workerId, null, { done: 'yep!' }, [
+                return [4 /*yield*/, Task_1.default.release(acquired._id, workerId, null, { done: 'yep!' }, [
                         {
                             _child_id: 0,
                             name: 'Continuation Child A',
@@ -419,18 +419,18 @@ test('can complete with children', function () { return __awaiter(void 0, void 0
                 }
                 expect(completed.isComplete).toBeTruthy();
                 expect(completed.output.done).toEqual('yep!');
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(group._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(group._id)];
             case 5:
                 tasks = _a.sent();
                 expect(tasks).toHaveLength(3);
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('continuation', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('continuation', workerId)];
             case 6:
                 acquiredChild = _a.sent();
                 if (!acquiredChild || !acquiredChild._id) {
                     throw new Error('No acquiredChild task!');
                 }
                 expect(acquiredChild.name).toEqual('Continuation Child A');
-                return [4 /*yield*/, Task_1.Task.getParentsData(acquiredChild)];
+                return [4 /*yield*/, Task_1.default.getParentsData(acquiredChild)];
             case 7:
                 parents = _a.sent();
                 expect(parents).toHaveLength(1);
@@ -458,7 +458,7 @@ test('can complete with dag children', function () { return __awaiter(void 0, vo
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'DAG Group'
                     })];
             case 1:
@@ -466,7 +466,7 @@ test('can complete with dag children', function () { return __awaiter(void 0, vo
                 if (!group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Task A',
                         isSeed: true,
                         channel: 'dag'
@@ -474,13 +474,13 @@ test('can complete with dag children', function () { return __awaiter(void 0, vo
             case 2:
                 task = _a.sent();
                 workerId = (0, uniqid_1.default)();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('dag', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('dag', workerId)];
             case 3:
                 acquired = _a.sent();
                 if (!acquired || !acquired._id) {
                     throw new Error('No acquired task!');
                 }
-                return [4 /*yield*/, Task_1.Task.release(acquired._id, workerId, null, { done: 'yep!' }, [
+                return [4 /*yield*/, Task_1.default.release(acquired._id, workerId, null, { done: 'yep!' }, [
                         {
                             _child_id: 0,
                             name: 'Task B',
@@ -516,47 +516,47 @@ test('can complete with dag children', function () { return __awaiter(void 0, vo
                 if (!completed || !completed._id) {
                     throw new Error('No completed task!');
                 }
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('dag', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('dag', workerId)];
             case 5:
                 acquireB = _a.sent();
                 if (!acquireB || !acquireB._id) {
                     throw new Error('No acquireB');
                 }
                 expect(acquireB.name).toEqual('Task B');
-                return [4 /*yield*/, Task_1.Task.release(acquireB._id, workerId, null, { done: 'B' })];
+                return [4 /*yield*/, Task_1.default.release(acquireB._id, workerId, null, { done: 'B' })];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('dag', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('dag', workerId)];
             case 7:
                 acquireC = _a.sent();
                 if (!acquireC || !acquireC._id) {
                     throw new Error('No acquireC');
                 }
                 expect(acquireC.name).toEqual('Task C');
-                return [4 /*yield*/, Task_1.Task.release(acquireC._id, workerId, null, { done: 'C' })];
+                return [4 /*yield*/, Task_1.default.release(acquireC._id, workerId, null, { done: 'C' })];
             case 8:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('dag', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('dag', workerId)];
             case 9:
                 acquireD = _a.sent();
                 if (!acquireD || !acquireD._id) {
                     throw new Error('No acquireD');
                 }
                 expect(acquireD.name).toEqual('Task D');
-                return [4 /*yield*/, Task_1.Task.release(acquireD._id, workerId, null, { done: 'D' })];
+                return [4 /*yield*/, Task_1.default.release(acquireD._id, workerId, null, { done: 'D' })];
             case 10:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('dag', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('dag', workerId)];
             case 11:
                 acquireE = _a.sent();
                 if (!acquireE || !acquireE._id) {
                     throw new Error('No acquireE');
                 }
                 expect(acquireE.name).toEqual('Task E');
-                return [4 /*yield*/, Task_1.Task.release(acquireE._id, workerId, null, { done: 'E' })];
+                return [4 /*yield*/, Task_1.default.release(acquireE._id, workerId, null, { done: 'E' })];
             case 12:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(group._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(group._id)];
             case 13:
                 tasks = _a.sent();
                 expect(tasks).toHaveLength(5);
@@ -575,7 +575,7 @@ test('can complete task with workgroup delay', function () { return __awaiter(vo
         switch (_c.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -583,21 +583,21 @@ test('can complete task with workgroup delay', function () { return __awaiter(vo
                 if (!group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Over the limit',
                         workgroup: 'rateLimitMe',
                         channel: 'test_a'
                     })];
             case 2:
                 task = _c.sent();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'In Workgroup A',
                         workgroup: 'rateLimitMe',
                         channel: 'test_a'
                     })];
             case 3:
                 taskA = _c.sent();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'In Workgroup B',
                         workgroup: 'rateLimitMe',
                         channel: 'test_b'
@@ -605,7 +605,7 @@ test('can complete task with workgroup delay', function () { return __awaiter(vo
             case 4:
                 taskB = _c.sent();
                 workerId = (0, uniqid_1.default)();
-                return [4 /*yield*/, Task_1.Task.acquireInChannel('test_a', workerId)];
+                return [4 /*yield*/, Task_1.default.acquireInChannel('test_a', workerId)];
             case 5:
                 acquired = _c.sent();
                 if (!acquired || !acquired._id) {
@@ -618,13 +618,13 @@ test('can complete task with workgroup delay', function () { return __awaiter(vo
                     throw new Error('No taskB task!');
                 }
                 timestamp = new Date().getTime();
-                return [4 /*yield*/, Task_1.Task.release(acquired._id, workerId, null, { delay: 'me' }, [], 35)];
+                return [4 /*yield*/, Task_1.default.release(acquired._id, workerId, null, { delay: 'me' }, [], 35)];
             case 6:
                 _c.sent();
-                return [4 /*yield*/, Task_1.Task.findById(taskA._id)];
+                return [4 /*yield*/, Task_1.default.findById(taskA._id)];
             case 7:
                 taskADelayed = _c.sent();
-                return [4 /*yield*/, Task_1.Task.findById(taskB._id)];
+                return [4 /*yield*/, Task_1.default.findById(taskB._id)];
             case 8:
                 taskBDelayed = _c.sent();
                 if (!taskADelayed || !taskADelayed._id) {
@@ -647,7 +647,7 @@ test('sync parents complete', function () { return __awaiter(void 0, void 0, voi
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Out of Sync Parents Group'
                     })];
             case 1:
@@ -655,7 +655,7 @@ test('sync parents complete', function () { return __awaiter(void 0, void 0, voi
                 if (!group._id) {
                     throw new Error('No group id');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Task A',
                         isSeed: true,
                         channel: 'dag'
@@ -678,7 +678,7 @@ test('sync parents complete', function () { return __awaiter(void 0, void 0, voi
                         } })];
             case 4:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Task A',
                         isSeed: true,
                         channel: 'dag',
@@ -694,11 +694,11 @@ test('sync parents complete', function () { return __awaiter(void 0, void 0, voi
                         } })];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.syncParents()];
+                return [4 /*yield*/, Task_1.default.syncParents()];
             case 7:
                 count = _a.sent();
                 expect(count).toEqual(1);
-                return [4 /*yield*/, Task_1.Task.findById(taskB._id)];
+                return [4 /*yield*/, Task_1.default.findById(taskB._id)];
             case 8:
                 refreshTaskB = _a.sent();
                 if (!refreshTaskB._id) {
@@ -709,3 +709,4 @@ test('sync parents complete', function () { return __awaiter(void 0, void 0, voi
         }
     });
 }); });
+//# sourceMappingURL=task.test.js.map

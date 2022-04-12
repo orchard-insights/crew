@@ -124,17 +124,16 @@ var Worker = /** @class */ (function () {
     Worker.prototype.stopWork = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.shuttingDown = true;
-                        console.log("~~ " + this.channel + " (" + this.id + ") stopWork");
-                        if (!this.workInterval) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (0, dynamic_1.clearIntervalAsync)(this.workInterval)];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/];
+                this.shuttingDown = true;
+                console.log("~~ " + this.channel + " (" + this.id + ") stopWork");
+                // stop looking for new tasks:
+                if (this.workInterval) {
+                    return [2 /*return*/, (0, dynamic_1.clearIntervalAsync)(this.workInterval)];
                 }
+                else {
+                    return [2 /*return*/, Promise.resolve()];
+                }
+                return [2 /*return*/];
             });
         });
     };
@@ -161,7 +160,7 @@ var Worker = /** @class */ (function () {
                         this.task = acquireResponse.data.task;
                         if (!(this.task && this.task._id)) return [3 /*break*/, 5];
                         console.log("~~ " + this.channel + " (" + this.id + ") acquired task " + this.task._id);
-                        return [4 /*yield*/, this.executeJob(acquireResponse.data.task.input, acquireResponse.data.parents)
+                        return [4 /*yield*/, this.executeTask(acquireResponse.data.task.input, acquireResponse.data.parents)
                             // Once the work is completed, let the API know in a resilient way
                         ];
                     case 3:
@@ -214,7 +213,7 @@ var Worker = /** @class */ (function () {
                     case 6: return [3 /*break*/, 10];
                     case 7:
                         error_3 = _a.sent();
-                        // Something went wrong, usually in executeJob
+                        // Something went wrong, usually in executeTask
                         console.error(error_3);
                         // Let the API know about the error in a resilient way
                         return [4 /*yield*/, (0, async_retry_1.default)(function (bail) { return __awaiter(_this, void 0, void 0, function () {
@@ -261,3 +260,4 @@ var Worker = /** @class */ (function () {
     return Worker;
 }());
 exports.default = Worker;
+//# sourceMappingURL=Worker.js.map

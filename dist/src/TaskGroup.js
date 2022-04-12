@@ -39,7 +39,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TaskGroup = void 0;
 var luxon_1 = require("luxon");
 var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
@@ -348,4 +347,5 @@ var TaskGroup = /** @class */ (function () {
     };
     return TaskGroup;
 }());
-exports.TaskGroup = TaskGroup;
+exports.default = TaskGroup;
+//# sourceMappingURL=TaskGroup.js.map

@@ -39,11 +39,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Task = void 0;
 var mongodb_1 = require("mongodb");
 var lodash_1 = __importDefault(require("lodash"));
 var luxon_1 = require("luxon");
-var TaskGroup_1 = require("./TaskGroup");
+var TaskGroup_1 = __importDefault(require("./TaskGroup"));
 var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
 /**
@@ -387,7 +386,7 @@ var Task = /** @class */ (function () {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
                     case 1:
                         taskCollection = (_b.sent()).taskCollection;
-                        return [4 /*yield*/, TaskGroup_1.TaskGroup.findById(taskGroupId)];
+                        return [4 /*yield*/, TaskGroup_1.default.findById(taskGroupId)];
                     case 2:
                         group = _b.sent();
                         document = {
@@ -603,7 +602,7 @@ var Task = /** @class */ (function () {
                     case 0: return [4 /*yield*/, Task.findById(id)];
                     case 1:
                         originalTask = _a.sent();
-                        return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                        return [4 /*yield*/, TaskGroup_1.default.fromData({
                                 name: 'Pluck Task ' + id,
                                 isPaused: true
                             })];
@@ -1076,4 +1075,5 @@ var Task = /** @class */ (function () {
     };
     return Task;
 }());
-exports.Task = Task;
+exports.default = Task;
+//# sourceMappingURL=Task.js.map

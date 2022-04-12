@@ -64,7 +64,7 @@ var WorkerB = /** @class */ (function (_super) {
         _this.channel = "worker_b";
         return _this;
     }
-    WorkerB.prototype.executeJob = function (data) {
+    WorkerB.prototype.executeTask = function (data) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -97,3 +97,4 @@ var WorkerB = /** @class */ (function (_super) {
     return WorkerB;
 }(Worker_1.default));
 exports.default = WorkerB;
+//# sourceMappingURL=WorkerB.js.map

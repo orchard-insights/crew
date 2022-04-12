@@ -14,3 +14,4 @@ new WorkerGroup_1.default([
     new WorkerB_1.default(),
     new WorkerC_1.default()
 ]);
+//# sourceMappingURL=workers.js.map

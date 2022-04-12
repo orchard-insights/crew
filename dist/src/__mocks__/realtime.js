@@ -11,3 +11,4 @@ var Realtime = /** @class */ (function () {
 }());
 var emitter = new Realtime();
 exports.default = emitter;
+//# sourceMappingURL=realtime.js.map

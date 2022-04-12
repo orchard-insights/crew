@@ -48,3 +48,4 @@ commander_1.program.command('work')
     ]);
 });
 commander_1.program.parse(process.argv);
+//# sourceMappingURL=index.js.map

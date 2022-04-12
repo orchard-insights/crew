@@ -82,14 +82,25 @@ var WorkerGroup = /** @class */ (function () {
         this.shuttingDown = false;
         this.killTimeout = null;
         this.workers = workers;
-        process.on('SIGTERM', function () {
-            console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString());
-            _this.startShutdown();
-        });
-        process.on('SIGINT', function () {
-            console.info('Got SIGINT. Graceful shutdown start', new Date().toISOString());
-            _this.startShutdown();
-        });
+        var signals = ['SIGTERM', 'SIGINT'];
+        if (process.platform === "win32") {
+            console.warn('Graceful shutdown for workers is not supported on Windows!');
+        }
+        for (var _i = 0, signals_1 = signals; _i < signals_1.length; _i++) {
+            var signal = signals_1[_i];
+            process.once(signal, function (signalOrEvent) { return __awaiter(_this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            console.info('~~ Got ' + signalOrEvent + '. Graceful shutdown started.', new Date().toISOString());
+                            return [4 /*yield*/, this.startShutdown()];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/];
+                    }
+                });
+            }); });
+        }
         if (process.env.CREW_WORKER_DISABLE_EXPRESS !== 'yes') {
             this.server = new WorkerServer_1.default();
             this.server.app.get("/healthcheck", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
@@ -149,18 +160,19 @@ var WorkerGroup = /** @class */ (function () {
                 });
             }); });
         }
-        for (var _i = 0, workers_2 = workers; _i < workers_2.length; _i++) {
-            var worker = workers_2[_i];
+        for (var _a = 0, workers_2 = workers; _a < workers_2.length; _a++) {
+            var worker = workers_2[_a];
             worker.startWork();
         }
     }
     WorkerGroup.prototype.startShutdown = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var stopPromises, _i, _a, worker;
+            var stopPromises, _i, _a, worker, stopPromise, e_1;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        _b.trys.push([0, 3, , 4]);
                         if (this.shuttingDown) {
                             return [2 /*return*/];
                         }
@@ -169,7 +181,9 @@ var WorkerGroup = /** @class */ (function () {
                         // Ask each worker to gracefully shutdown
                         for (_i = 0, _a = this.workers; _i < _a.length; _i++) {
                             worker = _a[_i];
-                            stopPromises.push(worker.stopWork());
+                            stopPromise = worker.stopWork();
+                            console.log('~~ ask stop', worker.name, stopPromise);
+                            stopPromises.push(stopPromise);
                         }
                         // Set a timeout to force process to exit if workers take too long to shutdown
                         this.killTimeout = setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -187,10 +201,16 @@ var WorkerGroup = /** @class */ (function () {
                         return [4 /*yield*/, Promise.all(stopPromises)];
                     case 1:
                         _b.sent();
+                        console.log('~~ All workers stopped.');
                         return [4 /*yield*/, finalizeShutdown(this.server, this.workers, this.killTimeout)];
                     case 2:
                         _b.sent();
-                        return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_1 = _b.sent();
+                        console.error('startShutdown failed :', e_1);
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -198,3 +218,4 @@ var WorkerGroup = /** @class */ (function () {
     return WorkerGroup;
 }());
 exports.default = WorkerGroup;
+//# sourceMappingURL=WorkerGroup.js.map

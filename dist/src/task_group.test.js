@@ -42,8 +42,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 jest.mock('./database');
 jest.mock('./realtime');
 var database_1 = __importDefault(require("./database"));
-var Task_1 = require("./Task");
-var TaskGroup_1 = require("./TaskGroup");
+var Task_1 = __importDefault(require("./Task"));
+var TaskGroup_1 = __importDefault(require("./TaskGroup"));
 var realtime_1 = __importDefault(require("./realtime"));
 beforeEach(function () { return __awaiter(void 0, void 0, void 0, function () {
     var _a, groupCollection, taskCollection;
@@ -85,7 +85,7 @@ test('can update group', function () { return __awaiter(void 0, void 0, void 0, 
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Wrong Name'
                     })];
             case 1:
@@ -93,10 +93,10 @@ test('can update group', function () { return __awaiter(void 0, void 0, void 0, 
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.updateById(group._id, { name: 'Right Name' })];
+                return [4 /*yield*/, TaskGroup_1.default.updateById(group._id, { name: 'Right Name' })];
             case 2:
                 _a.sent();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.findById(group._id)];
+                return [4 /*yield*/, TaskGroup_1.default.findById(group._id)];
             case 3:
                 updated = _a.sent();
                 if (!updated || !updated._id) {
@@ -113,7 +113,7 @@ test('can pause and unpause group', function () { return __awaiter(void 0, void 
         switch (_b.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Test Group'
                     })];
             case 1:
@@ -122,26 +122,26 @@ test('can pause and unpause group', function () { return __awaiter(void 0, void 
                     throw new Error('No group!');
                 }
                 expect(group.isPaused).toBeFalsy();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am not paused',
                         channel: 'test_a'
                     })];
             case 2:
                 _b.sent();
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'Neither am I',
                         channel: 'test_a'
                     })];
             case 3:
                 _b.sent();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.syncPauseById(group._id, true)];
+                return [4 /*yield*/, TaskGroup_1.default.syncPauseById(group._id, true)];
             case 4:
                 paused = _b.sent();
                 if (!paused || !paused._id) {
                     throw new Error('No paused!');
                 }
                 expect(paused.isPaused).toBeTruthy();
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(paused._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(paused._id)];
             case 5:
                 pausedTasks = _b.sent();
                 expect(pausedTasks).toHaveLength(2);
@@ -149,14 +149,14 @@ test('can pause and unpause group', function () { return __awaiter(void 0, void 
                     task = pausedTasks_1[_i];
                     expect(task.isPaused).toBeTruthy();
                 }
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.syncPauseById(group._id, false)];
+                return [4 /*yield*/, TaskGroup_1.default.syncPauseById(group._id, false)];
             case 6:
                 unpaused = _b.sent();
                 if (!unpaused || !unpaused._id) {
                     throw new Error('No unpaused!');
                 }
                 expect(unpaused.isPaused).toBeFalsy();
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(unpaused._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(unpaused._id)];
             case 7:
                 unpausedTasks = _b.sent();
                 expect(unpausedTasks).toHaveLength(2);
@@ -174,7 +174,7 @@ test('can reset group - no seed', function () { return __awaiter(void 0, void 0,
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Reset Group'
                     })];
             case 1:
@@ -182,7 +182,7 @@ test('can reset group - no seed', function () { return __awaiter(void 0, void 0,
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am completed',
                         channel: 'completed'
                     })];
@@ -191,7 +191,7 @@ test('can reset group - no seed', function () { return __awaiter(void 0, void 0,
                 if (!completedTask || !completedTask._id) {
                     throw new Error('No completed task');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am not completed',
                         channel: 'not_completed'
                     })];
@@ -210,10 +210,10 @@ test('can reset group - no seed', function () { return __awaiter(void 0, void 0,
                         } })];
             case 5:
                 _a.sent();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.resetById(group._id, 2)];
+                return [4 /*yield*/, TaskGroup_1.default.resetById(group._id, 2)];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(group._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(group._id)];
             case 7:
                 resetTasks = _a.sent();
                 expect(resetTasks).toHaveLength(2);
@@ -232,7 +232,7 @@ test('can reset group - with seed', function () { return __awaiter(void 0, void 
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Reset Group'
                     })];
             case 1:
@@ -240,7 +240,7 @@ test('can reset group - with seed', function () { return __awaiter(void 0, void 
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am the seed',
                         isSeed: true,
                         channel: 'completed'
@@ -250,7 +250,7 @@ test('can reset group - with seed', function () { return __awaiter(void 0, void 
                 if (!completedTask || !completedTask._id) {
                     throw new Error('No completed task');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am not completed nor a seed',
                         channel: 'not_completed'
                     })];
@@ -269,10 +269,10 @@ test('can reset group - with seed', function () { return __awaiter(void 0, void 
                         } })];
             case 5:
                 _a.sent();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.resetById(group._id, 2)];
+                return [4 /*yield*/, TaskGroup_1.default.resetById(group._id, 2)];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, Task_1.Task.findAllInGroup(group._id)];
+                return [4 /*yield*/, Task_1.default.findAllInGroup(group._id)];
             case 7:
                 resetTasks = _a.sent();
                 expect(resetTasks).toHaveLength(1);
@@ -289,7 +289,7 @@ test('can retry group', function () { return __awaiter(void 0, void 0, void 0, f
         switch (_a.label) {
             case 0:
                 realtime_1.default.emit = jest.fn();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData({
+                return [4 /*yield*/, TaskGroup_1.default.fromData({
                         name: 'Retry Group'
                     })];
             case 1:
@@ -297,7 +297,7 @@ test('can retry group', function () { return __awaiter(void 0, void 0, void 0, f
                 if (!group || !group._id) {
                     throw new Error('No group!');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am the seed',
                         channel: 'completed'
                     })];
@@ -306,7 +306,7 @@ test('can retry group', function () { return __awaiter(void 0, void 0, void 0, f
                 if (!completedTask || !completedTask._id) {
                     throw new Error('No completed task');
                 }
-                return [4 /*yield*/, Task_1.Task.fromData(group._id, {
+                return [4 /*yield*/, Task_1.default.fromData(group._id, {
                         name: 'I am not completed',
                         channel: 'not_completed'
                     })];
@@ -333,7 +333,7 @@ test('can retry group', function () { return __awaiter(void 0, void 0, void 0, f
                         } })];
             case 6:
                 _a.sent();
-                return [4 /*yield*/, TaskGroup_1.TaskGroup.retryById(group._id, 2)];
+                return [4 /*yield*/, TaskGroup_1.default.retryById(group._id, 2)];
             case 7:
                 _a.sent();
                 return [4 /*yield*/, taskCollection.find({ taskGroupId: group._id, isComplete: true }).toArray()];
@@ -351,3 +351,4 @@ test('can retry group', function () { return __awaiter(void 0, void 0, void 0, f
         }
     });
 }); });
+//# sourceMappingURL=task_group.test.js.map

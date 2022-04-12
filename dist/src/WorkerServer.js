@@ -19,3 +19,4 @@ var WorkerServer = /** @class */ (function () {
     return WorkerServer;
 }());
 exports.default = WorkerServer;
+//# sourceMappingURL=WorkerServer.js.map

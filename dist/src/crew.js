@@ -44,10 +44,10 @@ var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
 var database_1 = __importDefault(require("./database"));
-var TaskGroup_1 = require("./TaskGroup");
-Object.defineProperty(exports, "TaskGroup", { enumerable: true, get: function () { return TaskGroup_1.TaskGroup; } });
-var Task_1 = require("./Task");
-Object.defineProperty(exports, "Task", { enumerable: true, get: function () { return Task_1.Task; } });
+var TaskGroup_1 = __importDefault(require("./TaskGroup"));
+exports.TaskGroup = TaskGroup_1.default;
+var Task_1 = __importDefault(require("./Task"));
+exports.Task = Task_1.default;
 var Worker_1 = __importDefault(require("./Worker"));
 exports.Worker = Worker_1.default;
 var WorkerGroup_1 = __importDefault(require("./WorkerGroup"));
@@ -249,7 +249,7 @@ function crew(options) {
                     case 0:
                         limit = parseInt(req.query.limit || '50');
                         skip = parseInt(req.query.skip || '0');
-                        return [4 /*yield*/, TaskGroup_1.TaskGroup.findAll(limit, skip)];
+                        return [4 /*yield*/, TaskGroup_1.default.findAll(limit, skip)];
                     case 1:
                         groups = _a.sent();
                         res.json(groups);
@@ -279,7 +279,7 @@ function crew(options) {
             var count;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.countAll()];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.countAll()];
                     case 1:
                         count = _a.sent();
                         res.json({ count: count });
@@ -314,7 +314,7 @@ function crew(options) {
             var group;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.findById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.findById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         group = _a.sent();
                         if (group) {
@@ -354,7 +354,7 @@ function crew(options) {
             var task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.findById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, Task_1.default.findById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         task = _a.sent();
                         if (task) {
@@ -413,7 +413,7 @@ function crew(options) {
                     case 0:
                         limit = parseInt(req.query.limit || '-1');
                         skip = parseInt(req.query.skip || '0');
-                        return [4 /*yield*/, Task_1.Task.findAllInGroup(new mongodb_1.ObjectId(req.params.id), limit, skip)];
+                        return [4 /*yield*/, Task_1.default.findAllInGroup(new mongodb_1.ObjectId(req.params.id), limit, skip)];
                     case 1:
                         tasks = _a.sent();
                         res.json(tasks);
@@ -467,7 +467,7 @@ function crew(options) {
                     case 0:
                         limit = parseInt(req.query.limit || '50');
                         skip = parseInt(req.query.skip || '0');
-                        return [4 /*yield*/, Task_1.Task.findAllInChannel(limit, skip, req.params.id)];
+                        return [4 /*yield*/, Task_1.default.findAllInChannel(limit, skip, req.params.id)];
                     case 1:
                         tasks = _a.sent();
                         res.json(tasks);
@@ -496,7 +496,7 @@ function crew(options) {
             var channelStats;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.getChannels()];
+                    case 0: return [4 /*yield*/, Task_1.default.getChannels()];
                     case 1:
                         channelStats = _a.sent();
                         res.json(channelStats);
@@ -531,7 +531,7 @@ function crew(options) {
             var group;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.fromData(req.body)];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.fromData(req.body)];
                     case 1:
                         group = _a.sent();
                         res.json(group);
@@ -573,7 +573,7 @@ function crew(options) {
             var task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.fromData(new mongodb_1.ObjectId(req.params.id), req.body)];
+                    case 0: return [4 /*yield*/, Task_1.default.fromData(new mongodb_1.ObjectId(req.params.id), req.body)];
                     case 1:
                         task = _a.sent();
                         res.json(task);
@@ -607,7 +607,7 @@ function crew(options) {
             var deleteResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.deleteById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.deleteById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         deleteResult = _a.sent();
                         res.json(deleteResult);
@@ -641,7 +641,7 @@ function crew(options) {
             var deleteResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.deleteById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, Task_1.default.deleteById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         deleteResult = _a.sent();
                         res.json(deleteResult);
@@ -676,7 +676,7 @@ function crew(options) {
             var resetResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.resetById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.resetById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         resetResult = _a.sent();
                         res.json(resetResult);
@@ -724,7 +724,7 @@ function crew(options) {
                 switch (_a.label) {
                     case 0:
                         remainingAttempts = parseInt(req.body.remainingAttempts || '2');
-                        return [4 /*yield*/, TaskGroup_1.TaskGroup.retryById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
+                        return [4 /*yield*/, TaskGroup_1.default.retryById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
                     case 1:
                         retryResult = _a.sent();
                         res.json(retryResult);
@@ -759,7 +759,7 @@ function crew(options) {
             var resetResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.syncPauseById(new mongodb_1.ObjectId(req.params.id), true)];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.syncPauseById(new mongodb_1.ObjectId(req.params.id), true)];
                     case 1:
                         resetResult = _a.sent();
                         res.json(resetResult);
@@ -794,7 +794,7 @@ function crew(options) {
             var resetResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.syncPauseById(new mongodb_1.ObjectId(req.params.id), false)];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.syncPauseById(new mongodb_1.ObjectId(req.params.id), false)];
                     case 1:
                         resetResult = _a.sent();
                         res.json(resetResult);
@@ -842,7 +842,7 @@ function crew(options) {
                 switch (_a.label) {
                     case 0:
                         remainingAttempts = parseInt(req.body.remainingAttempts || '2');
-                        return [4 /*yield*/, Task_1.Task.resetById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
+                        return [4 /*yield*/, Task_1.default.resetById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
                     case 1:
                         resetResult = _a.sent();
                         res.json(resetResult);
@@ -890,7 +890,7 @@ function crew(options) {
                 switch (_a.label) {
                     case 0:
                         remainingAttempts = parseInt(req.body.remainingAttempts || '2');
-                        return [4 /*yield*/, Task_1.Task.retryById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
+                        return [4 /*yield*/, Task_1.default.retryById(new mongodb_1.ObjectId(req.params.id), remainingAttempts)];
                     case 1:
                         resetResult = _a.sent();
                         res.json(resetResult);
@@ -925,7 +925,7 @@ function crew(options) {
             var task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.pluckById(new mongodb_1.ObjectId(req.params.id))];
+                    case 0: return [4 /*yield*/, Task_1.default.pluckById(new mongodb_1.ObjectId(req.params.id))];
                     case 1:
                         task = _a.sent();
                         res.json(task);
@@ -967,7 +967,7 @@ function crew(options) {
             var task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.Task.updateById(new mongodb_1.ObjectId(req.params.id), req.body)];
+                    case 0: return [4 /*yield*/, Task_1.default.updateById(new mongodb_1.ObjectId(req.params.id), req.body)];
                     case 1:
                         task = _a.sent();
                         res.json(task);
@@ -1009,7 +1009,7 @@ function crew(options) {
             var group;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, TaskGroup_1.TaskGroup.updateById(new mongodb_1.ObjectId(req.params.id), req.body)];
+                    case 0: return [4 /*yield*/, TaskGroup_1.default.updateById(new mongodb_1.ObjectId(req.params.id), req.body)];
                     case 1:
                         group = _a.sent();
                         res.json(group);
@@ -1069,11 +1069,11 @@ function crew(options) {
                             throw new Error('workerId is required!');
                         }
                         workerId = req.body.workerId;
-                        return [4 /*yield*/, Task_1.Task.acquireInChannel(req.params.id, workerId)];
+                        return [4 /*yield*/, Task_1.default.acquireInChannel(req.params.id, workerId)];
                     case 1:
                         task = _a.sent();
                         if (!task) return [3 /*break*/, 3];
-                        return [4 /*yield*/, Task_1.Task.getParentsData(task)];
+                        return [4 /*yield*/, Task_1.default.getParentsData(task)];
                     case 2:
                         parents = _a.sent();
                         res.json({ task: task, parents: parents });
@@ -1128,7 +1128,7 @@ function crew(options) {
                         }
                         workerId = req.body.workerId;
                         workgroupDelayInSeconds = req.body.workgroupDelayInSeconds || 0;
-                        return [4 /*yield*/, Task_1.Task.release(new mongodb_1.ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds)];
+                        return [4 /*yield*/, Task_1.default.release(new mongodb_1.ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds)];
                     case 1:
                         releaseResult = _a.sent();
                         res.json(releaseResult);
@@ -1138,7 +1138,7 @@ function crew(options) {
         }); }));
     });
     var freeAbandonedCron = node_cron_1.default.schedule('* * * * *', function () {
-        Task_1.Task.freeAbandoned().then(function (result) {
+        Task_1.default.freeAbandoned().then(function (result) {
             if (result.modifiedCount > 0) {
                 console.log("~~ freed " + result.modifiedCount + " abandoned tasks");
             }
@@ -1146,7 +1146,7 @@ function crew(options) {
     });
     var cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {
         if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-            TaskGroup_1.TaskGroup.cleanExpired().then(function (result) {
+            TaskGroup_1.default.cleanExpired().then(function (result) {
                 if (result.length > 0) {
                     console.log("~~ removed " + result.length + " expired task groups");
                 }
@@ -1154,7 +1154,7 @@ function crew(options) {
         }
     });
     var syncParentsCompleteCron = node_cron_1.default.schedule('*/5 * * * *', function () {
-        Task_1.Task.syncParents().then(function (count) {
+        Task_1.default.syncParents().then(function (count) {
             console.log("~~ syncd " + count + " task's parentsComplete");
         });
     });
@@ -1199,3 +1199,4 @@ function crew(options) {
 }
 exports.crew = crew;
 exports.default = crew;
+//# sourceMappingURL=crew.js.map

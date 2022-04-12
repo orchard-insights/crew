@@ -85,3 +85,4 @@ function initDb() {
     });
 }
 exports.default = initDb;
+//# sourceMappingURL=database.js.map
