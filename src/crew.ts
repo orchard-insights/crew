@@ -4,6 +4,8 @@ import { MongoClient, ObjectId } from 'mongodb'
 import initDb from './database'
 import { TaskGroup } from './TaskGroup'
 import { Task } from './Task'
+import Worker from './Worker'
+import WorkerGroup from './WorkerGroup'
 import cron from 'node-cron'
 import { Socket, Server } from 'socket.io'
 import http from 'http'
@@ -1017,4 +1019,6 @@ export {
   crew,
   TaskGroup,
   Task,
+  Worker,
+  WorkerGroup
 }

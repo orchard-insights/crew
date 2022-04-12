@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config()
 
-import WorkerGroup from './WorkerGroup'
+import WorkerGroup from '../../src/WorkerGroup'
 
 import WorkerA from './WorkerA'
 import WorkerB from './WorkerB'

@@ -258,7 +258,7 @@ The code within this project implements 3 components:
 
 You can run each component individually by running these commands in separate terminal windows:
 ```
-yarn dev:api
+yarn dev
 yarn dev:workers
 yarn cli start
 yarn cli work

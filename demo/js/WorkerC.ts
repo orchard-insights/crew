@@ -1,5 +1,5 @@
-import Worker from './Worker'
-import { JobResponse } from './Worker'
+import Worker from '../../src/Worker'
+import { JobResponse } from '../../src/Worker'
 
 // This worker is here as an example, and for testing only - do not deploy
 

@@ -1,40 +1,24 @@
 import Worker from './Worker'
 import WorkerServer from './WorkerServer'
 import express from 'express'
-import http from 'http'
 
-// "this" safe function for checking worker shutdown status
-async function checkWorkersReadyForExit(app: WorkerServer | null, workers: Worker[], killTimeout: NodeJS.Timeout | null) {
-  let doExit = true
+async function finalizeShutdown(app: WorkerServer | null, workers: Worker[], killTimeout: NodeJS.Timeout | null) {
+  // Ask each to worker to cleanup its resources
   for (const worker of workers) {
-    // Make sure all workers are no longer busy
-    console.log(`Shutdown worker ${worker.name} (${worker.id}) isBusy = ${worker.lock.isBusy()}`)
-    if (worker.lock.isBusy()) {
-      doExit = false
-    }
+    console.log(`Shutdown cleanup worker ${worker.name} (${worker.id})`)
+    await worker.cleanup()
   }
-  if (doExit) {
-    // Once all workers are no longer busy, ask each to cleanup their resources
-    for (const worker of workers) {
-      console.log(`Shutdown cleanup worker ${worker.name} (${worker.id})`)
-      await worker.cleanup()
-    }
-    // Stop express
-    if (app) {
-      app.server.close()
-    }
-    // Prevent the default timeout process.exit interval from running
-    if (killTimeout) {
-      clearTimeout(killTimeout)
-    }
-    console.log('Worker cleanup complete - exit!')
-    // Shutdown
-    process.exit(1)
-  } else {
-    setTimeout(() => {
-      checkWorkersReadyForExit(app, workers, killTimeout)
-    }, 5000)
+  // Stop express
+  if (app) {
+    app.server.close()
   }
+  // If necessary, prevent the default timeout process.exit interval from running
+  if (killTimeout) {
+    clearTimeout(killTimeout)
+  }
+  console.log('Worker cleanup complete - exit!')
+  // Shutdown
+  process.exit(1)
 }
 
 export default class WorkerGroup {
@@ -82,7 +66,7 @@ export default class WorkerGroup {
         const results = []
         for (const worker of this.workers) {
           if (worker.id) {
-            results.push({id: worker.id, name: worker.name, channel: worker.channel, working: worker.lock.isBusy()})
+            results.push({id: worker.id, name: worker.name, channel: worker.channel, working: worker.task ? true : false})
           } else {
             results.push({id: null, name: worker.name, channel: worker.channel, working: null})
           }
@@ -96,23 +80,25 @@ export default class WorkerGroup {
     }
   }
 
-  startShutdown() {
+  async startShutdown() {
     if (this.shuttingDown) {
       return
     }
     this.shuttingDown = true
+    const stopPromises = []
     // Ask each worker to gracefully shutdown
     for (const worker of this.workers) {
-      worker.stopWork()
+      stopPromises.push(worker.stopWork())
     }
-  
-    // Force process exit after shutdown timeout
-    this.killTimeout = setTimeout(() => {
+
+    // Set a timeout to force process to exit if workers take too long to shutdown
+    this.killTimeout = setTimeout(async () => {
       console.warn('~~ Group graceful shutdown failed - force shutdown!')
-      process.exit(1)
+      await finalizeShutdown(this.server, this.workers, null)
     }, (parseInt(process.env.CREW_SHUTDOWN_TIMEOUT_IN_MILLISECONDS || '30000')))
 
-    // Watch workers to see if all ready for exit
-    checkWorkersReadyForExit(this.server, this.workers, this.killTimeout)
+    await Promise.all(stopPromises)
+
+    await finalizeShutdown(this.server, this.workers, this.killTimeout)
   }
 }
