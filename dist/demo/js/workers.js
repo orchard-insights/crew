@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config();
-var WorkerGroup_1 = __importDefault(require("./WorkerGroup"));
+var WorkerGroup_1 = __importDefault(require("../../src/WorkerGroup"));
 var WorkerA_1 = __importDefault(require("./WorkerA"));
 var WorkerB_1 = __importDefault(require("./WorkerB"));
 var WorkerC_1 = __importDefault(require("./WorkerC"));
