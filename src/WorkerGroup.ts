@@ -32,6 +32,9 @@ export default class WorkerGroup {
 
     const signals = ['SIGTERM', 'SIGINT']
 
+    if (process.platform === "win32") {
+      console.warn('Graceful shutdown for workers is not supported on Windows!')
+    }
     for (const signal of signals) {
       process.once(signal, async (signalOrEvent) => {
         console.info('~~ Got ' + signalOrEvent + '. Graceful shutdown started.', new Date().toISOString())
