@@ -43,6 +43,7 @@ var axios_1 = __importDefault(require("axios"));
 var uniqid_1 = __importDefault(require("uniqid"));
 var async_retry_1 = __importDefault(require("async-retry"));
 var dynamic_1 = require("set-interval-async/dynamic");
+var TaskError_1 = __importDefault(require("./TaskError"));
 var Worker = /** @class */ (function () {
     function Worker() {
         // Crew api url and credentials
@@ -251,6 +252,9 @@ var Worker = /** @class */ (function () {
                                                 workerId: this.id,
                                                 error: error_3 instanceof Error ? error_3.message : error_3 + ''
                                             };
+                                            if (error_3 instanceof TaskError_1.default && error_3.output) {
+                                                releaseData.error = error_3.output;
+                                            }
                                             if (this.pauseWorkgroupSeconds > 0) {
                                                 releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds;
                                             }

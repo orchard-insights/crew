@@ -5,6 +5,7 @@ import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set
 import Task from './Task'
 import TaskResponse from './TaskResponse'
 import WorkerGroup from './WorkerGroup'
+import TaskError from './TaskError'
 
 export default abstract class Worker {
   // A unique id for the worker
@@ -172,6 +173,9 @@ export default abstract class Worker {
             const releaseData : any = {
               workerId: this.id,
               error: error instanceof Error ? error.message : error + ''
+            }
+            if (error instanceof TaskError && error.output) {
+              releaseData.error = error.output
             }
             if (this.pauseWorkgroupSeconds > 0) {
               releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds

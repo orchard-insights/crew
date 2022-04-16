@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkerGroup = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
+exports.TaskError = exports.WorkerGroup = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
 var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
@@ -52,6 +52,8 @@ var Worker_1 = __importDefault(require("./Worker"));
 exports.Worker = Worker_1.default;
 var WorkerGroup_1 = __importDefault(require("./WorkerGroup"));
 exports.WorkerGroup = WorkerGroup_1.default;
+var TaskError_1 = __importDefault(require("./TaskError"));
+exports.TaskError = TaskError_1.default;
 var node_cron_1 = __importDefault(require("node-cron"));
 var socket_io_1 = require("socket.io");
 var cors_1 = __importDefault(require("cors"));

@@ -6,6 +6,7 @@ import TaskChild from './TaskChild';
 import Worker from './Worker';
 import WorkerGroup from './WorkerGroup';
 import TaskResponse from './TaskResponse';
+import TaskError from './TaskError';
 import { Socket, Server } from 'socket.io';
 import http from 'http';
 interface CrewOptions {
@@ -15,5 +16,5 @@ interface CrewOptions {
 }
 declare function crew(options: CrewOptions): express.Router;
 export default crew;
-export { crew, TaskGroup, Task, Worker, WorkerGroup, TaskResponse, TaskChild };
+export { crew, TaskGroup, Task, Worker, WorkerGroup, TaskResponse, TaskChild, TaskError };
 //# sourceMappingURL=crew.d.ts.map
