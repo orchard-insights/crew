@@ -78,7 +78,10 @@ export default class WorkerGroup {
     }
 
     for (const worker of workers) {
-      worker.startWork()
+      worker.group = this
+      worker.prepare().then(() => {
+        worker.startWork()
+      })
     }
   }
 

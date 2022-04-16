@@ -60,6 +60,8 @@ var Worker = /** @class */ (function () {
         // When true the worker will look for a new task immediately after finishing a task
         // This helps drain work queues faster but may not be desirable in rate limited workflows
         this.workIntervalRestart = (process.env.CREW_WORK_INTERVAL_RESTART || 'yes') === 'yes';
+        // Provide workers access to their workgroup so that they can access express
+        this.group = null;
         this.task = null;
         this.id = (0, uniqid_1.default)();
     }
@@ -138,6 +140,26 @@ var Worker = /** @class */ (function () {
                 return [2 /*return*/];
             });
         });
+    };
+    // Subclasses override this method to initialize any resources prior to work starting (add express routes in worker group)
+    Worker.prototype.prepare = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, Promise.resolve()];
+            });
+        });
+    };
+    // Subclasses override this method to cleanup any resources they use (database connections)
+    Worker.prototype.cleanup = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, Promise.resolve()];
+            });
+        });
+    };
+    // Sublclasses override this method to let worker group know if we are healthy or not
+    Worker.prototype.isHealthy = function () {
+        return Promise.resolve(true);
     };
     // Primary workflow implementation
     Worker.prototype.doWork = function () {

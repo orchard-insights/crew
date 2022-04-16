@@ -111,21 +111,6 @@ var WorkerC = /** @class */ (function (_super) {
             });
         });
     };
-    WorkerC.prototype.cleanup = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                console.log("Nothing to cleanup for worker " + this.name + " (" + this.id + ")");
-                return [2 /*return*/];
-            });
-        });
-    };
-    WorkerC.prototype.isHealthy = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, true];
-            });
-        });
-    };
     return WorkerC;
 }(Worker_1.default));
 exports.default = WorkerC;

@@ -160,9 +160,16 @@ var WorkerGroup = /** @class */ (function () {
                 });
             }); });
         }
+        var _loop_1 = function (worker) {
+            worker.group = this_1;
+            worker.prepare().then(function () {
+                worker.startWork();
+            });
+        };
+        var this_1 = this;
         for (var _a = 0, workers_2 = workers; _a < workers_2.length; _a++) {
             var worker = workers_2[_a];
-            worker.startWork();
+            _loop_1(worker);
         }
     }
     WorkerGroup.prototype.startShutdown = function () {

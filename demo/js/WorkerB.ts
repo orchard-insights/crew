@@ -15,12 +15,4 @@ export default class WorkerB extends Worker {
       return {output: {"message": "Worker B did it!", "at": new Date() + ''}}
     }
   }
-
-  public async cleanup () {
-    console.log(`Nothing to cleanup for worker ${this.name} (${this.id})`)
-  }
-
-  public async isHealthy () {
-    return true
-  }
 }

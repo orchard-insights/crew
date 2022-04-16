@@ -47,12 +47,4 @@ export default class WorkerC extends Worker {
       }
     }
   }
-
-  public async cleanup () {
-    console.log(`Nothing to cleanup for worker ${this.name} (${this.id})`)
-  }
-
-  public async isHealthy () {
-    return true
-  }
 }

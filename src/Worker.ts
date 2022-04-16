@@ -4,6 +4,7 @@ import retry from 'async-retry'
 import { setIntervalAsync, clearIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/dynamic'
 import Task from './Task'
 import TaskResponse from './TaskResponse'
+import WorkerGroup from './WorkerGroup'
 
 export default abstract class Worker {
   // A unique id for the worker
@@ -39,6 +40,9 @@ export default abstract class Worker {
   // When true the worker will look for a new task immediately after finishing a task
   // This helps drain work queues faster but may not be desirable in rate limited workflows
   workIntervalRestart = (process.env.CREW_WORK_INTERVAL_RESTART || 'yes') === 'yes'
+
+  // Provide workers access to their workgroup so that they can access express
+  group: WorkerGroup | null = null
 
   constructor() {
     this.task = null
@@ -85,14 +89,23 @@ export default abstract class Worker {
     }
   }
 
-  // Subclasses implement this method to cleanup any resources they use (database connections)
-  abstract cleanup() : Promise<void>
+  // Subclasses override this method to initialize any resources prior to work starting (add express routes in worker group)
+  async prepare() : Promise<void> {
+    return Promise.resolve()
+  }
+
+  // Subclasses override this method to cleanup any resources they use (database connections)
+  async cleanup() : Promise<void> {
+    return Promise.resolve()
+  }
 
   // Subclasses implement this method to do their thing
   abstract executeTask(data : any, parents: any[]) : Promise<TaskResponse>
 
-  // Let worker group know if we are healthy or not
-  abstract isHealthy() : Promise<boolean>
+  // Sublclasses override this method to let worker group know if we are healthy or not
+  isHealthy() : Promise<boolean> {
+    return Promise.resolve(true)
+  }
 
   // Primary workflow implementation
   private async doWork() : Promise<boolean> {

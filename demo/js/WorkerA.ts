@@ -16,11 +16,13 @@ export default class WorkerA extends Worker {
     }
   }
 
-  public async cleanup () {
-    console.log(`Nothing to cleanup for worker ${this.name} (${this.id})`)
+  override async prepare(): Promise<void> {
+    console.log("Worker A custom prepare called!")
+    return Promise.resolve()
   }
 
-  public async isHealthy () {
-    return true
+  override async cleanup(): Promise<void> {
+    console.log("Worker A custom cleanup called!")
+    return Promise.resolve()
   }
 }

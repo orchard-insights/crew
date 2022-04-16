@@ -79,18 +79,19 @@ var WorkerA = /** @class */ (function (_super) {
             });
         });
     };
-    WorkerA.prototype.cleanup = function () {
+    WorkerA.prototype.prepare = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                console.log("Nothing to cleanup for worker " + this.name + " (" + this.id + ")");
-                return [2 /*return*/];
+                console.log("Worker A custom prepare called!");
+                return [2 /*return*/, Promise.resolve()];
             });
         });
     };
-    WorkerA.prototype.isHealthy = function () {
+    WorkerA.prototype.cleanup = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, true];
+                console.log("Worker A custom cleanup called!");
+                return [2 /*return*/, Promise.resolve()];
             });
         });
     };

@@ -4,7 +4,7 @@ export default class WorkerA extends Worker {
     name: string;
     channel: string;
     executeTask(data: any): Promise<TaskResponse>;
+    prepare(): Promise<void>;
     cleanup(): Promise<void>;
-    isHealthy(): Promise<boolean>;
 }
 //# sourceMappingURL=WorkerA.d.ts.map
