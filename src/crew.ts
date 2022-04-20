@@ -8,6 +8,8 @@ import TaskChild from './TaskChild'
 import Worker from './Worker'
 import WorkerGroup from './WorkerGroup'
 import TaskResponse from './TaskResponse'
+import WorkerServer from './WorkerServer'
+import WorkerServerInterface from './WorkerServerInterface'
 import TaskError from './TaskError'
 import cron from 'node-cron'
 import { Socket, Server } from 'socket.io'
@@ -1028,5 +1030,7 @@ export {
   WorkerGroup,
   TaskResponse,
   TaskChild,
-  TaskError
+  TaskError,
+  WorkerServer,
+  WorkerServerInterface
 }

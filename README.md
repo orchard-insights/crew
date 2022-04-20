@@ -233,7 +233,6 @@ Next, create a file called .env with the following contents:
 CREW_MONGO_URI=<TODO - connection string>
 CREW_WORK_INTERVAL_IN_MILLISECONDS=15000
 CREW_WORK_INTERVAL_RESTART=yes
-CREW_WORKER_DISABLE_EXPRESS=no
 CREW_SHUTDOWN_TIMEOUT_IN_MILLISECONDS=30000
 CREW_WORKER_PORT=3002
 CREW_API_BASE_URL=http://localhost:3000/
@@ -287,8 +286,6 @@ yarn test
 **CREW_WORK_INTERVAL_IN_MILLISECONDS** : For demo workers. How often each worker should attempt to acquire a task.
 
 **CREW_WORK_INTERVAL_RESTART** : For demo workers. When set to "yes", worker will immediately attempt to acquire a task after a task is released.
-
-**CREW_WORKER_DISABLE_EXPRESS** : For demo workers. JavaScript demo workers provide their own express server so they can be invoked via cron. When set to "yes" they will not enable the server.
 
 **CREW_WORKER_PORT** : For demo workers. JavaScript demo workers provide their own express server so they can be invoked via cron.  This tells them what port to use.
 

@@ -1,16 +1,19 @@
 import Worker from './Worker'
-import WorkerServer from './WorkerServer'
+import WorkerServerInterface from './WorkerServerInterface'
 import express from 'express'
+import _ from 'lodash'
 
-async function finalizeShutdown(app: WorkerServer | null, workers: Worker[], killTimeout: NodeJS.Timeout | null) {
+async function finalizeShutdown(app: WorkerServerInterface | null, workers: Worker[], killTimeout: NodeJS.Timeout | null) {
   // Ask each to worker to cleanup its resources
   for (const worker of workers) {
     console.log(`Shutdown cleanup worker ${worker.name} (${worker.id})`)
     await worker.cleanup()
   }
   // Stop express
-  if (app) {
-    app.server.close()
+  if (app && app.closeOnWorkerShutdown) {
+    app.server.close(() => {
+      console.log('WorkerServer closed.')
+    })
   }
   // If necessary, prevent the default timeout process.exit interval from running
   if (killTimeout) {
@@ -22,12 +25,12 @@ async function finalizeShutdown(app: WorkerServer | null, workers: Worker[], kil
 }
 
 export default class WorkerGroup {
-  server: WorkerServer | null
+  server: WorkerServerInterface | null
   workers: Worker[]
   shuttingDown = false
   killTimeout: NodeJS.Timeout | null = null
 
-  constructor(workers: Worker[]) {
+  constructor(workers: Worker[] = [], workerServer: WorkerServerInterface | null = null) {
     this.workers = workers
 
     const signals = ['SIGTERM', 'SIGINT']
@@ -42,8 +45,8 @@ export default class WorkerGroup {
       })
     }
 
-    if (process.env.CREW_WORKER_DISABLE_EXPRESS !== 'yes') {
-      this.server = new WorkerServer()
+    if (workerServer) {
+      this.server = workerServer
       this.server.app.get(`/healthcheck`, async (req: express.Request, res: express.Response) => {
         let isHealthy = true
         for (const worker of this.workers) {
@@ -83,6 +86,19 @@ export default class WorkerGroup {
         worker.startWork()
       })
     }
+  }
+
+  addWorker(worker: Worker) {
+    worker.group = this
+    this.workers.push(worker)
+    worker.prepare().then(() => {
+      worker.startWork()
+    })
+  }
+
+  async removeWorker(worker: Worker) {
+    await worker.stopWork()
+    this.workers = _.without(this.workers, worker)
   }
 
   async startShutdown() {

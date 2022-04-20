@@ -189,7 +189,7 @@ export default class Task {
   isSeed: boolean
   errorDelayInSeconds: number
   input: object | null
-  output:object | null
+  output: object | null
   errors: object[]
   createdAt: Date
   parentIds: ObjectId[]

@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var WorkerServer_1 = __importDefault(require("./WorkerServer"));
+var lodash_1 = __importDefault(require("lodash"));
 function finalizeShutdown(app, workers, killTimeout) {
     return __awaiter(this, void 0, void 0, function () {
         var _i, workers_1, worker;
@@ -61,8 +61,10 @@ function finalizeShutdown(app, workers, killTimeout) {
                     return [3 /*break*/, 1];
                 case 4:
                     // Stop express
-                    if (app) {
-                        app.server.close();
+                    if (app && app.closeOnWorkerShutdown) {
+                        app.server.close(function () {
+                            console.log('WorkerServer closed.');
+                        });
                     }
                     // If necessary, prevent the default timeout process.exit interval from running
                     if (killTimeout) {
@@ -77,8 +79,10 @@ function finalizeShutdown(app, workers, killTimeout) {
     });
 }
 var WorkerGroup = /** @class */ (function () {
-    function WorkerGroup(workers) {
+    function WorkerGroup(workers, workerServer) {
         var _this = this;
+        if (workers === void 0) { workers = []; }
+        if (workerServer === void 0) { workerServer = null; }
         this.shuttingDown = false;
         this.killTimeout = null;
         this.workers = workers;
@@ -101,8 +105,8 @@ var WorkerGroup = /** @class */ (function () {
                 });
             }); });
         }
-        if (process.env.CREW_WORKER_DISABLE_EXPRESS !== 'yes') {
-            this.server = new WorkerServer_1.default();
+        if (workerServer) {
+            this.server = workerServer;
             this.server.app.get("/healthcheck", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
                 var isHealthy, _i, _a, worker, isWorkerHealthy;
                 return __generator(this, function (_b) {
@@ -172,6 +176,26 @@ var WorkerGroup = /** @class */ (function () {
             _loop_1(worker);
         }
     }
+    WorkerGroup.prototype.addWorker = function (worker) {
+        worker.group = this;
+        this.workers.push(worker);
+        worker.prepare().then(function () {
+            worker.startWork();
+        });
+    };
+    WorkerGroup.prototype.removeWorker = function (worker) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, worker.stopWork()];
+                    case 1:
+                        _a.sent();
+                        this.workers = lodash_1.default.without(this.workers, worker);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     WorkerGroup.prototype.startShutdown = function () {
         return __awaiter(this, void 0, void 0, function () {
             var stopPromises, _i, _a, worker, stopPromise, e_1;

@@ -1,12 +1,14 @@
 /// <reference types="node" />
 import Worker from './Worker';
-import WorkerServer from './WorkerServer';
+import WorkerServerInterface from './WorkerServerInterface';
 export default class WorkerGroup {
-    server: WorkerServer | null;
+    server: WorkerServerInterface | null;
     workers: Worker[];
     shuttingDown: boolean;
     killTimeout: NodeJS.Timeout | null;
-    constructor(workers: Worker[]);
+    constructor(workers?: Worker[], workerServer?: WorkerServerInterface | null);
+    addWorker(worker: Worker): void;
+    removeWorker(worker: Worker): Promise<void>;
     startShutdown(): Promise<void>;
 }
 //# sourceMappingURL=WorkerGroup.d.ts.map

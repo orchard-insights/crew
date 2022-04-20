@@ -1,0 +1,1 @@
+{"version":3,"file":"WorkerServerInterface.d.ts","sourceRoot":"","sources":["../../src/WorkerServerInterface.ts"],"names":[],"mappings":";AAAA,OAAO,OAAO,MAAM,SAAS,CAAA;AAC7B,OAAO,IAAI,MAAM,MAAM,CAAA;AAEvB,MAAM,CAAC,OAAO,WAAW,qBAAqB;IAC5C,GAAG,EAAE,OAAO,CAAC,OAAO,CAAA;IACpB,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;IACnB,qBAAqB,EAAE,OAAO,CAAA;CAC/B"}

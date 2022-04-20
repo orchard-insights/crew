@@ -1,10 +1,12 @@
 import express from 'express'
 import cors from 'cors'
 import http from 'http'
+import WorkerServerInterface from './WorkerServerInterface'
 
-export default class WorkerServer {
+export default class WorkerServer implements WorkerServerInterface {
   app: express.Express
   server: http.Server
+  closeOnWorkerShutdown: true
   constructor() {
     // Setup express (with cors and json bodyparser)
     this.app = express()

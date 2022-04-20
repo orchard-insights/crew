@@ -40,7 +40,6 @@ commander_1.program.command('work')
     .option('-u, --url <url>', 'Which url should the workers use to access the API [http://localhost:3000/]')
     .action(function (options) {
     process.env.CREW_API_BASE_URL = options.url || 'http://localhost:3000/';
-    process.env.CREW_WORKER_DISABLE_EXPRESS = 'yes';
     new WorkerGroup_1.default([
         new WorkerA_1.default(),
         new WorkerB_1.default(),
