@@ -27,12 +27,16 @@ export default async function initDb () : Promise<CrewDatabase> {
   const collections = await db.listCollections().toArray()
   let shouldCreateTaskGroupsCollection = true
   let shouldCreateTasksCollection = true
+  let shouldCreateOperatorsCollection = true
   for (const collection of collections) {
     if (collection.name == 'task_group') {
       shouldCreateTaskGroupsCollection = false
     }
     if (collection.name == 'task') {
       shouldCreateTasksCollection = false
+    }
+    if (collection.name == 'operator') {
+      shouldCreateOperatorsCollection = false
     }
   }
 
@@ -48,9 +52,16 @@ export default async function initDb () : Promise<CrewDatabase> {
   } else {
     console.log('~~ Collection Exists : task')
   }
+  if (shouldCreateOperatorsCollection) {
+    console.log('~~ Creating Collection : operator')
+    await db.createCollection('operator')
+  } else {
+    console.log('~~ Collection Exists : operator')
+  }
   
   const groupCollection = db.collection('task_group')
   const taskCollection = db.collection('task')
+  const operatorCollection = db.collection('operator')
 
   // Ensure indexes exist
   const taskIndexes = [{
@@ -109,6 +120,7 @@ export default async function initDb () : Promise<CrewDatabase> {
     db,
     groupCollection,
     taskCollection,
+    operatorCollection,
     async close () {
       if (mongod) {
         await mongod.stop()
