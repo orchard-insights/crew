@@ -21,6 +21,7 @@ export default async function initDb () : Promise<CrewDatabase> {
   const db = client.db(process.env.CREW_MONGO_DB || 'orchard-crew')
   const groupCollection = db.collection('task_group')
   const taskCollection = db.collection('task')
+  const operatorCollection = db.collection('operator')
 
   await client.connect()
 
@@ -29,6 +30,7 @@ export default async function initDb () : Promise<CrewDatabase> {
     db,
     groupCollection,
     taskCollection,
+    operatorCollection,
     async close () {
       await mongod.stop()
     }

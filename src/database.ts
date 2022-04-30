@@ -1,6 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb'
 import CrewDatabase from './CrewDatabase'
+import Operator from './Operator';
 
 let crewDb: CrewDatabase | null = null
 
@@ -62,6 +63,18 @@ export default async function initDb () : Promise<CrewDatabase> {
   const groupCollection = db.collection('task_group')
   const taskCollection = db.collection('task')
   const operatorCollection = db.collection('operator')
+
+  const tasksChangeStream = taskCollection.watch()
+  tasksChangeStream.on('change', (change) => {
+    if (change.documentKey) {
+      if (change.operationType === 'update' || change.operationType === 'insert') {
+        // console.log('~~ Task Change', change.operationType, (change.documentKey as any)._id)
+        if (change.documentKey && (change.documentKey as any)._id) {
+          Operator.execute((change.documentKey as any)._id)
+        }
+      }
+    }
+  })
 
   // Ensure indexes exist
   const taskIndexes = [{

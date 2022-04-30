@@ -267,6 +267,12 @@ export default class Task {
     return tasks as Task[]
   }
 
+  static async countOperatorAssigned(channel: string, workerId: string) {
+    const { taskCollection } = await initDb()
+    const assignedCount = await taskCollection.count({ channel, assignedTo: workerId })
+    return assignedCount
+  }
+
   static async getChannels() {
     const { taskCollection } = await initDb()
     const channels = await taskCollection.distinct('channel')
@@ -427,7 +433,6 @@ export default class Task {
       ]
     )
     const task = await Task.fromData(group._id, newTaskData)
-
     // Return group
     return task
   }
