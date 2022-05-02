@@ -88,16 +88,8 @@ export default class Operator {
     const operator = await Operator.findById(id)
     realtime.emit ('operators', 'operator:update', operator)
 
-    // If an operator is unpaused, bootstrap tasks
-    if (!updates.isPaused) {
-      const limit = operator.maxConcurrency || 10
-      const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
-      for (const task of tasks) {
-        if (task._id) {
-          Operator.execute(task._id)
-        }
-      }
-    }
+    await Operator.bootstrap(operator)
+
     return operator
   }
 
@@ -137,6 +129,30 @@ export default class Operator {
     const deleteResult = await operatorCollection.deleteOne( { '_id': id })
     realtime.emit ('operators', 'operator:delete', operator)
     return deleteResult
+  }
+
+  static async bootstrapAll() {
+    // Since operators depend on events which may have gotten lost,
+    // periodically trigger a set of events for each operator in order
+    // to re-start the event flow.
+    const { operatorCollection } = await initDb()
+    const operators = await operatorCollection.find().sort( { createdAt: -1 } ).toArray() as Operator[]
+    for (const operator of operators) {
+      await Operator.bootstrap(operator)
+    }
+  }
+
+  static async bootstrap(operator: Operator) : Promise<void> {
+    // If an operator is unpaused, bootstrap tasks
+    if (!operator.isPaused) {
+      const limit = operator.maxConcurrency || parseInt(process.env.CREW_OPERATOR_BOOTSTRAP_EVENT_COUNT || '10')
+      const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
+      for (const task of tasks) {
+        if (task._id) {
+          Operator.execute(task._id)
+        }
+      }
+    }
   }
 
   static async execute(taskId: ObjectId) : Promise<void> {

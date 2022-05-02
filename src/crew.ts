@@ -125,6 +125,11 @@ function crew (options: CrewOptions) : express.Router {
       console.log('Database connection closed!')
     })
 
+    // Bootstrap operators (also done in cron below)
+    Operator.bootstrapAll().then(() => {
+      console.log(`~~ bootstraped operators`)
+    })
+
     // Home
     router.get('/', unhandledExceptionsHandler(
       async (req, res) => {
@@ -1173,6 +1178,12 @@ function crew (options: CrewOptions) : express.Router {
     })
   })
 
+  const bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
+    Operator.bootstrapAll().then(() => {
+      console.log(`~~ bootstraped operators`)
+    })
+  })
+
   const cleanExpiredGroupsCron = cron.schedule('30 3 * * *', () => {
     if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
       TaskGroup.cleanExpired().then((result) => {
@@ -1202,6 +1213,7 @@ function crew (options: CrewOptions) : express.Router {
         freeAbandonedCron.stop()
         cleanExpiredGroupsCron.stop()
         syncParentsCompleteCron.stop()
+        bootstrapOperatorsCron.stop()
 
         // Close database connection
         console.log('~~ Closing database connection')
