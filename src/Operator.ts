@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import _ from 'lodash'
+import _, { update } from 'lodash'
 import { DateTime } from 'luxon'
 import realtime from './realtime'
 import initDb from './database'
@@ -24,10 +24,6 @@ import { getMessenger } from "./PubSub"
  *         requestConfig:
  *           type: object
  *           description: Axios request config to use when POSTing the task (for adding Authorization headers).
- *         maxConcurrency:
- *           type: integer
- *           default: 5
- *           description: Max number of operator tasks to execute at once.
  *         isPaused:
  *           type: boolean
  *           description: When true, this operator will not proxy requests to url.
@@ -47,15 +43,13 @@ export default class Operator {
   channel: string
   url: string
   requestConfig: object | null
-  maxConcurrency: number
   isPaused: boolean
   createdAt: Date
   
-  constructor(channel: string, url: string, requestConfig: object | null = null, maxConcurrency = 5, isPaused = false) {
+  constructor(channel: string, url: string, requestConfig: object | null = null, isPaused = false) {
     this.channel = channel
     this.url = url
     this.requestConfig = requestConfig
-    this.maxConcurrency = maxConcurrency
     this.isPaused = isPaused
     this.createdAt = DateTime.utc().toJSDate()
   }
@@ -102,7 +96,6 @@ export default class Operator {
       channel: data.channel,
       url: data.url,
       requestConfig: data.requestConfig || null,
-      maxConcurrency: data.maxConcurrency || 5,
       isPaused: data.isPaused, // Should always be in sync with group!
       createdAt: DateTime.utc().toJSDate()
     }
@@ -110,17 +103,6 @@ export default class Operator {
     const insertResult = await operatorCollection.insertOne(document)
     const operator = await Operator.findById(insertResult.insertedId) as Operator
     realtime.emit ('operators', 'operator:create', operator)
-
-    if (!operator.isPaused) {
-      const limit = operator.maxConcurrency || 10
-      const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
-      const messenger = await getMessenger()
-      for (const task of tasks) {
-        if (task._id) {
-          messenger.publishExamineTask(task._id.toString())
-        }
-      }
-    }
 
     return operator
   }
@@ -147,12 +129,20 @@ export default class Operator {
   static async bootstrap(operator: Operator) : Promise<void> {
     // If an operator is unpaused, bootstrap tasks
     if (!operator.isPaused) {
-      const limit = operator.maxConcurrency || parseInt(process.env.CREW_OPERATOR_BOOTSTRAP_EVENT_COUNT || '10')
-      const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
-      const messenger = await getMessenger()
-      for (const task of tasks) {
-        if (task._id) {
-          messenger.publishExamineTask(task._id.toString())
+      const limit = 100
+      let skip = 0
+      let hasMore = true
+      while (hasMore) {
+        const tasks = await Task.findAllInChannel(limit, skip, operator.channel)
+        const messenger = await getMessenger()
+        for (const task of tasks) {
+          if (task._id) {
+            messenger.publishExamineTask(task._id.toString())
+          }
+        }
+        skip = skip + limit
+        if (tasks.length < limit) {
+          hasMore = false
         }
       }
     }
