@@ -20,6 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "@godaddy/terminus": "^4.9.0",
+    "@google-cloud/pubsub": "^2.19.4",
     "@types/async-lock": "^1.1.3",
     "@types/async-retry": "^1.4.3",
     "@types/cors": "^2.8.12",

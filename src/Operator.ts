@@ -5,6 +5,7 @@ import realtime from './realtime'
 import initDb from './database'
 import Task from "./Task"
 import axios, { AxiosRequestConfig } from 'axios'
+import { getMessenger } from "./PubSub"
 
 /**
  * @openapi
@@ -113,9 +114,10 @@ export default class Operator {
     if (!operator.isPaused) {
       const limit = operator.maxConcurrency || 10
       const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
+      const messenger = await getMessenger()
       for (const task of tasks) {
         if (task._id) {
-          Operator.execute(task._id)
+          messenger.publishExamineTask(task._id.toString())
         }
       }
     }
@@ -147,9 +149,10 @@ export default class Operator {
     if (!operator.isPaused) {
       const limit = operator.maxConcurrency || parseInt(process.env.CREW_OPERATOR_BOOTSTRAP_EVENT_COUNT || '10')
       const tasks = await Task.findAllInChannel(limit, 0, operator.channel)
+      const messenger = await getMessenger()
       for (const task of tasks) {
         if (task._id) {
-          Operator.execute(task._id)
+          messenger.publishExamineTask(task._id.toString())
         }
       }
     }
@@ -165,23 +168,17 @@ export default class Operator {
       const { operatorCollection } = await initDb()
       const operator = await operatorCollection.findOne({channel: channel}) as Operator
       if (operator) {
-        const workerId = "operator:" + operator._id
+        const workerId = "operator_" + operator._id
 
         if (operator.isPaused) {
           return
         }
 
-        // Count how many tasks are assigned to workerId, bail if greater than operator.maxConcurrency
-        if (operator.maxConcurrency > 0) {
-          const assignedCount = await Task.countOperatorAssigned(channel, workerId)
-          if (assignedCount >= operator.maxConcurrency) {
-            return
-          }
-        }
-
-        // If there is an operator for the channel, try to acquire a task
-        const task = await Task.acquireInChannel(channel, workerId)
+        // If there is an operator for the channel, try to acquire the task
+        const task = await Task.operatorAcquire(taskId, workerId)
         if (task && task._id) {
+          console.log('~~ execute task ' + task._id + ' (operator)')
+
           // Load parent data
           const parents = await Task.getParentsData(task)
 
