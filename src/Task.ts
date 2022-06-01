@@ -3,8 +3,10 @@ import _ from 'lodash'
 import { DateTime } from 'luxon'
 import TaskGroup from "./TaskGroup"
 import TaskChild from "./TaskChild"
+import Operator from "./Operator"
 import realtime from './realtime'
 import initDb from './database'
+import { getMessenger } from './PubSub'
 
 /**
  * @openapi
@@ -427,7 +429,6 @@ export default class Task {
       ]
     )
     const task = await Task.fromData(group._id, newTaskData)
-
     // Return group
     return task
   }
@@ -723,7 +724,10 @@ export default class Task {
     const threshold = DateTime.utc().minus({ seconds: abandonedSecondsThreshold }).toJSDate()
     const updateResult = await taskCollection.updateMany({
       isComplete: false,
-      assignedTo: { $ne:null },
+      $and: [
+        {assignedTo: { $ne: null }},
+        {assignedTo: { $not: /^operator_.*/ }}
+      ],
       assignedAt: { $lt: threshold }
     },{
       $set: {
@@ -781,5 +785,79 @@ export default class Task {
       }
     }
     return updatedCount
+  }
+
+  static async operatorAcquire(id: ObjectId, workerId: string) : Promise<Task | null> {
+    const { taskCollection } = await initDb()
+    const now = DateTime.utc().toJSDate()
+    const assignedAt = now
+    const assignResult = await taskCollection.findOneAndUpdate(
+      {
+        _id: id,
+        isComplete: false,
+        isPaused: false,
+        remainingAttempts: { $gt: 0 },
+        assignedTo: null,
+        $and: [
+          {$or: [
+            { runAfter: { $lt: now } },
+            { runAfter: null }
+          ]},
+          {$or: [
+            { parentsComplete: true },
+            { parentIds : { $size: 0 } }
+          ]}
+        ]
+      },
+      { $set: { assignedTo: workerId, assignedAt } },
+      { sort: { priority: -1, createdAt: 1 } }  // 1 = ascending, -1 = descending
+    )
+
+    if (!assignResult.value) {
+      return null
+    }
+    const messenger = await getMessenger()
+    await messenger.publishExecuteTask(id.toString())
+    const task = await Task.findById(assignResult.value._id)
+
+    // Mark tasks with same key and channel as also in progress
+    if (task.key) {
+      await taskCollection.updateMany(
+        { isComplete: false, channel: task.channel, key: task.key },
+        { 
+          $set: { assignedTo: workerId, assignedAt }
+        }
+      )
+      realtime.emit (task.taskGroupId + '', 'task:acquire:key', {
+        channel: task.channel,
+        key: task.key,
+        update: {
+          assignedTo: workerId,
+          assignedAt
+        }
+      })
+    }
+
+    realtime.emit (task.taskGroupId + '', 'task:update', task)
+    return task
+  }
+
+  static async examine(id: ObjectId) : Promise<any> {
+    const { operatorCollection } = await initDb()
+    const task = await Task.findById(id)
+    
+    // If task is
+    // not complete,
+    // not assigned,
+    // has remaining attempts,
+    // and has an operator for its channel
+    // then publish an event on the acquire message bus.
+    if (!task.isComplete && task.remainingAttempts > 0 && !task.assignedTo) {
+      const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
+      if (operator) {
+        const messenger = await getMessenger()
+        await messenger.publishExecuteTask(id.toString())
+      }
+    }
   }
 }

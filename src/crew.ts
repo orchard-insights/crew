@@ -20,6 +20,7 @@ import swaggerUi from 'swagger-ui-express'
 import swaggerJSDoc from 'swagger-jsdoc'
 import path from 'path'
 import emitter from './realtime'
+import Operator from './Operator'
 
 interface CrewOptions {
   server: http.Server,
@@ -122,6 +123,11 @@ function crew (options: CrewOptions) : express.Router {
     database.client.on('topologyClosed', () => {
       databaseConnected = false
       console.log('Database connection closed!')
+    })
+
+    // Bootstrap operators (also done in cron below)
+    Operator.bootstrapAll().then(() => {
+      console.log(`~~ bootstraped operators`)
     })
 
     // Home
@@ -965,6 +971,203 @@ function crew (options: CrewOptions) : express.Router {
         res.json(releaseResult)
       }
     ))
+
+    /**
+     * @openapi
+     * /api/v1/operators:
+     *   get:
+     *     description: Retrieve a list of operators.
+     *     tags:
+     *       - operator
+     *     parameters:
+     *       - in: query
+     *         name: limit
+     *         required: false
+     *         description: Maximum number of operators to retrieve.
+     *         default: 50
+     *         schema:
+     *           type: integer
+     *       - in: query
+     *         name: skip
+     *         required: false
+     *         description: How many operators to skip.
+     *         default: 0
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: An array of operators.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 $ref: '#/components/schemas/Operator'
+     */
+     router.get('/api/v1/operators', unhandledExceptionsHandler(
+      async (req, res) => {
+        const limit = parseInt(req.query.limit as string || '50')
+        const skip = parseInt(req.query.skip as string || '0')
+        const operators = await Operator.findAll(limit, skip)
+        res.json(operators)
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/operators/count:
+     *   get:
+     *     description: Retrieve the total count of operators.
+     *     tags:
+     *       - task_group
+     *     responses:
+     *       200:
+     *         description: The total count of operators.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 count:
+     *                   type: integer
+     */
+    router.get('/api/v1/operators/count', unhandledExceptionsHandler(
+      async (req, res) => {
+        const count = await Operator.countAll()
+        res.json({ count })
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/operator/{id}:
+     *   get:
+     *     description: Retrieve a single operator.
+     *     tags:
+     *       - operator
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         description: Id of the operator to retrieve.
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: An operator.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               $ref: '#/components/schemas/Operator'
+     */
+    router.get('/api/v1/operator/:id', unhandledExceptionsHandler(
+      async (req, res) => {
+        const operator = await Operator.findById(new ObjectId(req.params.id))
+        if (operator) {
+          res.json(operator)
+        } else {
+          res.status(404).json({ message: `Operator with id ${req.params.id} not found!` })
+        }
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/operators:
+     *   post:
+     *     description: Create a new operator.
+     *     tags:
+     *       - operator
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             $ref: '#/components/schemas/CreateOperator'
+     *     responses:
+     *       200:
+     *         description: The new operator.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               $ref: '#/components/schemas/Operator'
+     */
+     router.post('/api/v1/operators', unhandledExceptionsHandler(
+      async (req, res) => {
+        const operator = await Operator.fromData(req.body)
+        res.json(operator)
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/operator/{id}:
+     *   put:
+     *     description: Update an operator.
+     *     tags:
+     *       - operator
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         description: Id of the operator to update.
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             $ref: '#/components/schemas/CreateOperator'
+     *     responses:
+     *       200:
+     *         description: The updated operator.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               $ref: '#/components/schemas/Operator'
+     */
+     router.put('/api/v1/operator/:id', unhandledExceptionsHandler(
+      async (req, res) => {
+        const operator = await Operator.updateById(new ObjectId(req.params.id), req.body)
+        res.json(operator)
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/operator/{id}:
+     *   delete:
+     *     description: Delete an operator.
+     *     tags:
+     *       - operator
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         description: Id of the operator to delete.
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: MongoDB delete result.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     */
+     router.delete('/api/v1/operator/:id', unhandledExceptionsHandler(
+      async (req, res) => {
+        const deleteResult = await Operator.deleteById(new ObjectId(req.params.id))
+        res.json(deleteResult)
+      }
+    ))
   })
 
   const freeAbandonedCron = cron.schedule('* * * * *', () => {
@@ -972,6 +1175,12 @@ function crew (options: CrewOptions) : express.Router {
       if (result.modifiedCount > 0) {
         console.log(`~~ freed ${result.modifiedCount} abandoned tasks`)
       }
+    })
+  })
+
+  const bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
+    Operator.bootstrapAll().then(() => {
+      console.log(`~~ bootstraped operators`)
     })
   })
 
@@ -1004,6 +1213,7 @@ function crew (options: CrewOptions) : express.Router {
         freeAbandonedCron.stop()
         cleanExpiredGroupsCron.stop()
         syncParentsCompleteCron.stop()
+        bootstrapOperatorsCron.stop()
 
         // Close database connection
         console.log('~~ Closing database connection')
