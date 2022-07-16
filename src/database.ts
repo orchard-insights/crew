@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb'
 import CrewDatabase from './CrewDatabase'
-import { getMessenger } from './PubSub'
+import { getMessenger } from './CloudTasks'
 
 let crewDb: CrewDatabase | null = null
 

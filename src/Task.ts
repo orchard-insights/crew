@@ -6,7 +6,7 @@ import TaskChild from "./TaskChild"
 import Operator from "./Operator"
 import realtime from './realtime'
 import initDb from './database'
-import { getMessenger } from './PubSub'
+import { getMessenger } from './CloudTasks'
 
 /**
  * @openapi
@@ -443,17 +443,17 @@ export default class Task {
         isComplete: false,
         isPaused: false,
         remainingAttempts: { $gt: 0 },
-        assignedTo: null,
-        $and: [
-          {$or: [
-            { runAfter: { $lt: now } },
-            { runAfter: null }
-          ]},
-          {$or: [
-            { parentsComplete: true },
-            { parentIds : { $size: 0 } }
-          ]}
-        ]
+            assignedTo: null,
+            $and: [
+              {$or: [
+                { runAfter: { $lt: now } },
+                { runAfter: null }
+              ]},
+              {$or: [
+                { parentsComplete: true },
+                { parentIds : { $size: 0 } }
+              ]}
+            ]
       },
       { $set: { assignedTo: workerId, assignedAt } },
       { sort: { priority: -1, createdAt: 1 } }  // 1 = ascending, -1 = descending
@@ -718,28 +718,6 @@ export default class Task {
     }
   }
 
-  static async freeAbandoned() : Promise<any> {
-    const { taskCollection } = await initDb()
-    const abandonedSecondsThreshold = parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60')
-    const threshold = DateTime.utc().minus({ seconds: abandonedSecondsThreshold }).toJSDate()
-    const updateResult = await taskCollection.updateMany({
-      isComplete: false,
-      $and: [
-        {assignedTo: { $ne: null }},
-        {assignedTo: { $not: /^operator_.*/ }}
-      ],
-      assignedAt: { $lt: threshold }
-    },{
-      $set: {
-        assignedTo: null,
-        assignedAt: null
-      },
-      $inc: {remainingAttempts: -1},
-      $push: { errors: `Task not completed in ${abandonedSecondsThreshold} seconds.` as any }
-    })
-    return updateResult
-  }
-
   static async getParentsData(task: Task) : Promise<any> {
     const parents = []
     for (const parentId of task.parentIds) {
@@ -791,22 +769,51 @@ export default class Task {
     const { taskCollection } = await initDb()
     const now = DateTime.utc().toJSDate()
     const assignedAt = now
+    const assignedAtCutoff = DateTime.utc().minus({seconds: parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60')}).toJSDate()
+
     const assignResult = await taskCollection.findOneAndUpdate(
       {
         _id: id,
         isComplete: false,
         isPaused: false,
         remainingAttempts: { $gt: 0 },
-        assignedTo: null,
-        $and: [
-          {$or: [
-            { runAfter: { $lt: now } },
-            { runAfter: null }
-          ]},
-          {$or: [
-            { parentsComplete: true },
-            { parentIds : { $size: 0 } }
-          ]}
+
+        // Can acquire if
+        // assignedTo is null
+        //   AND runAfter is null OR has passed
+        //   AND parentsComplete is true or size 0
+        // OR
+        // assignedAt + CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS seconds has passed (TODO refreshable lease based on assignedAt - if task exec can update own assignedAt?)
+        //   AND runAfter is null OR has passed
+        //   AND parentsComplete is true or size 0
+        
+        $or: [
+          {$and: [{
+            assignedTo: null,
+            $and: [
+              {$or: [
+                { runAfter: { $lt: now } },
+                { runAfter: null }
+              ]},
+              {$or: [
+                { parentsComplete: true },
+                { parentIds : { $size: 0 } }
+              ]}
+            ]
+          }]},
+          {$and: [{
+            assignedAt: { $lt: assignedAtCutoff },
+            $and: [
+              {$or: [
+                { runAfter: { $lt: now } },
+                { runAfter: null }
+              ]},
+              {$or: [
+                { parentsComplete: true },
+                { parentIds : { $size: 0 } }
+              ]}
+            ]
+          }]}
         ]
       },
       { $set: { assignedTo: workerId, assignedAt } },
@@ -816,8 +823,6 @@ export default class Task {
     if (!assignResult.value) {
       return null
     }
-    const messenger = await getMessenger()
-    await messenger.publishExecuteTask(id.toString())
     const task = await Task.findById(assignResult.value._id)
 
     // Mark tasks with same key and channel as also in progress
@@ -851,8 +856,20 @@ export default class Task {
     // not assigned,
     // has remaining attempts,
     // and has an operator for its channel
-    // then publish an event on the acquire message bus.
-    if (!task.isComplete && task.remainingAttempts > 0 && !task.assignedTo) {
+    // then publish an event on the execute message bus.
+
+    let runAfterHasPassed = true
+    if (task.runAfter) {
+      const now = new Date()
+      if (now < task.runAfter) {
+        runAfterHasPassed = false
+        // TODO - re-publish examine with a delay that is after runAfter?
+      }
+    }
+
+    // console.log('~~ examine', !task.isPaused, !task.isComplete, (task.parentsComplete || task.parentIds.length === 0), task.remainingAttempts > 0, runAfterHasPassed)
+
+    if (!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed) {
       const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
       if (operator) {
         const messenger = await getMessenger()

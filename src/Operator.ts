@@ -5,7 +5,7 @@ import realtime from './realtime'
 import initDb from './database'
 import Task from "./Task"
 import axios, { AxiosRequestConfig } from 'axios'
-import { getMessenger } from "./PubSub"
+import { getMessenger } from "./CloudTasks"
 
 /**
  * @openapi

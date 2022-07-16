@@ -106,6 +106,13 @@ function crew (options: CrewOptions) : express.Router {
     }
   }
 
+  function authorizeCloudTaskEndpoint(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (req.query.accessToken = process.env.CREW_CLOUD_TASK_ACCESS_TOKEN || '') {
+      return next()
+    }
+    return res.status(401).send({ error: 'Access token is invalid!' })
+  }
+
   let client : MongoClient | null = null
 
   // Connect to mongdb and then setup the routes
@@ -929,6 +936,74 @@ function crew (options: CrewOptions) : express.Router {
 
     /**
      * @openapi
+     * /api/v1/task/{id}/examine:
+     *   post:
+     *     description: Orchestration uses this enpoint to examine a task to find out if it is eligible for execution.
+     *     tags:
+     *       - task
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         description: Id of task to examine
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Examine result.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     */
+     router.post('/api/v1/task/:id/examine', authorizeCloudTaskEndpoint, unhandledExceptionsHandler(
+      async (req, res) => {
+        const task = await Task.findById(new ObjectId(req.params.id))
+        if (task) {
+          await Task.examine(new ObjectId(task._id))
+          res.json({ success: true })
+        } else {
+          res.json({ task: null })
+        }
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/task/{id}/execute:
+     *   post:
+     *     description: Orchestration uses this enpoint to execute a task to find out if it is eligible for execution.
+     *     tags:
+     *       - task
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         description: Id of task to execute
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Execute result.
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     */
+     router.post('/api/v1/task/:id/execute', authorizeCloudTaskEndpoint, unhandledExceptionsHandler(
+      async (req, res) => {
+        const task = await Task.findById(new ObjectId(req.params.id))
+        if (task) {
+          await Operator.execute(new ObjectId(task._id))
+          res.json({ success: true })
+        } else {
+          res.json({ task: null })
+        }
+      }
+    ))
+
+    /**
+     * @openapi
      * /api/v1/task/{id}/release:
      *   post:
      *     description: Workers use this endpoint to return the result of completing or failing a task.
@@ -1170,14 +1245,6 @@ function crew (options: CrewOptions) : express.Router {
     ))
   })
 
-  const freeAbandonedCron = cron.schedule('* * * * *', () => {
-    Task.freeAbandoned().then((result) => {
-      if (result.modifiedCount > 0) {
-        console.log(`~~ freed ${result.modifiedCount} abandoned tasks`)
-      }
-    })
-  })
-
   const bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
     Operator.bootstrapAll().then(() => {
       console.log(`~~ bootstraped operators`)
@@ -1210,7 +1277,6 @@ function crew (options: CrewOptions) : express.Router {
       onSignal: async (): Promise<void> => {
         // Cleanup all resources
         console.log('~~ Terminus signal : cleaning up...')
-        freeAbandonedCron.stop()
         cleanExpiredGroupsCron.stop()
         syncParentsCompleteCron.stop()
         bootstrapOperatorsCron.stop()

@@ -263,6 +263,17 @@ yarn cli start
 yarn cli work
 ```
 
+When using operator based workers you will need to allow Google Cloud Tasks to be able to call your api:
+```
+ngrok http 3000
+```
+
+Then set CREW_API_PUBLIC_BASE_URL env var:
+
+```
+CREW_API_PUBLIC_BASE_URL=https://08d0-172-221-82-130.ngrok.io/
+```
+
 #### 4. Run tests
 
 ```
