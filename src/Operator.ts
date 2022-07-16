@@ -137,7 +137,7 @@ export default class Operator {
         const messenger = await getMessenger()
         for (const task of tasks) {
           if (task._id) {
-            messenger.publishExamineTask(task._id.toString())
+            messenger.publishExamineTask(task._id.toString(), 0)
           }
         }
         skip = skip + limit

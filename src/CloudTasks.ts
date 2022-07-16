@@ -8,17 +8,17 @@ import { CloudTasksClient } from '@google-cloud/tasks'
 const cloudTasksClient = new CloudTasksClient();
 
 interface Messenger {
-  publishExamineTask(taskId: string) : Promise<any>
+  publishExamineTask(taskId: string, delayInSeconds: number) : Promise<any>
 
   publishExecuteTask(taskId: string) : Promise<any>
 }
 
 class CloudTasksMessenger implements Messenger {
 
-  async publishExamineTask(taskId: string): Promise<any> {
+  async publishExamineTask(taskId: string, delayInSeconds = 0): Promise<any> {
     const url = process.env.CREW_API_PUBLIC_BASE_URL + `api/v1/task/${taskId}/examine?accessToken=${process.env.CREW_CLOUD_TASK_ACCESS_TOKEN || ''}`
-    console.log('~~ publishExamineTask', url)
-    await this.enqueue('crew-examine', url, {taskId, action: 'examine'})
+    console.log('~~ publishExamineTask', url, delayInSeconds)
+    await this.enqueue('crew-examine', url, {taskId, action: 'examine'}, delayInSeconds)
   }
 
   async publishExecuteTask(taskId: string): Promise<any> {

@@ -71,7 +71,7 @@ export default async function initDb () : Promise<CrewDatabase> {
       if (change.operationType === 'update' || change.operationType === 'insert') {
         // console.log('~~ Task Change', change.operationType, (change.documentKey as any)._id)
         if (change.documentKey && (change.documentKey as any)._id) {
-          messenger.publishExamineTask((change.documentKey as any)._id)
+          messenger.publishExamineTask((change.documentKey as any)._id, 0)
         }
       }
     }

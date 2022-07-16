@@ -850,6 +850,7 @@ export default class Task {
   static async examine(id: ObjectId) : Promise<any> {
     const { operatorCollection } = await initDb()
     const task = await Task.findById(id)
+    const messenger = await getMessenger()
     
     // If task is
     // not complete,
@@ -859,11 +860,15 @@ export default class Task {
     // then publish an event on the execute message bus.
 
     let runAfterHasPassed = true
+    let examineDelay = 0
     if (task.runAfter) {
       const now = new Date()
+
       if (now < task.runAfter) {
         runAfterHasPassed = false
-        // TODO - re-publish examine with a delay that is after runAfter?
+
+        // re-publish examine with a delay that is after runAfter
+        examineDelay = Math.ceil((task.runAfter.getTime() - now.getTime()) / 1000) + 1
       }
     }
 
@@ -872,9 +877,10 @@ export default class Task {
     if (!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed) {
       const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
       if (operator) {
-        const messenger = await getMessenger()
         await messenger.publishExecuteTask(id.toString())
       }
+    } else if (examineDelay) {
+      await messenger.publishExamineTask(id.toString(), examineDelay)
     }
   }
 }
