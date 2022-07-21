@@ -43,7 +43,7 @@ var crewDb = null;
 // await mongod.stop();
 function initDb() {
     return __awaiter(this, void 0, void 0, function () {
-        var mongod, uri, client, db, groupCollection, taskCollection;
+        var mongod, uri, client, db, groupCollection, taskCollection, operatorCollection;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -58,6 +58,7 @@ function initDb() {
                     db = client.db(process.env.CREW_MONGO_DB || 'orchard-crew');
                     groupCollection = db.collection('task_group');
                     taskCollection = db.collection('task');
+                    operatorCollection = db.collection('operator');
                     return [4 /*yield*/, client.connect()];
                 case 2:
                     _a.sent();
@@ -66,6 +67,7 @@ function initDb() {
                         db: db,
                         groupCollection: groupCollection,
                         taskCollection: taskCollection,
+                        operatorCollection: operatorCollection,
                         close: function () {
                             return __awaiter(this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {

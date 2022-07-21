@@ -1,0 +1,1 @@
+{"version":3,"file":"CloudTasks.d.ts","sourceRoot":"","sources":["../../src/CloudTasks.ts"],"names":[],"mappings":"AASA,UAAU,SAAS;IACjB,kBAAkB,CAAC,MAAM,EAAE,MAAM,EAAE,cAAc,EAAE,MAAM,GAAI,OAAO,CAAC,GAAG,CAAC,CAAA;IAEzE,kBAAkB,CAAC,MAAM,EAAE,MAAM,GAAI,OAAO,CAAC,GAAG,CAAC,CAAA;CAClD;AA0DD,eAAO,MAAM,YAAY,QAAiB,QAAQ,SAAS,CAG1D,CAAA"}

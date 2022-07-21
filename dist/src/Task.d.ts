@@ -205,8 +205,9 @@ export default class Task {
     static acquireInChannel(channel: string, workerId: string): Promise<Task | null>;
     static release(id: ObjectId, workerId: string, error?: any, output?: any, children?: TaskChild[], workgroupDelayInSeconds?: number): Promise<Task>;
     static syncParentsComplete(task: Task): Promise<void>;
-    static freeAbandoned(): Promise<any>;
     static getParentsData(task: Task): Promise<any>;
     static syncParents(): Promise<number>;
+    static operatorAcquire(id: ObjectId, workerId: string): Promise<Task | null>;
+    static examine(id: ObjectId): Promise<any>;
 }
 //# sourceMappingURL=Task.d.ts.map
