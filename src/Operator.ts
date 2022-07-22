@@ -179,6 +179,7 @@ export default class Operator {
 
           try {
             // Send request to operator's url
+            console.log('~~ Operator making call to : ' + operator.url)
             const response = await axios.post(operator.url, {input: task.input, parents}, config)
 
             // Unpack response
@@ -186,13 +187,17 @@ export default class Operator {
             // Release the task
             await Task.release(task._id, workerId, error, output, children)
           } catch (error) {
+            console.error('~~ Operator error', error)
             if (axios.isAxiosError(error) && error.response && error.response.data && error.response.data.error) {
+              console.error('~~ Operator http call error', error.response.data.error)
               await Task.release(task._id, workerId, error.response.data.error)
             } else if (axios.isAxiosError(error) && error.response && error.response.data && error.response.data.message) {
+              console.error('~~ Operator http call error', error.response.data.message)
               await Task.release(task._id, workerId, error.response.data.message)
             } else {
+              console.error('~~ Operator http call error', (error as Error).message)
               await Task.release(task._id, workerId, (error as Error).message)
-            }          
+            }
           }
         }
       }

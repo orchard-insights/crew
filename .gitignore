@@ -1,4 +1,5 @@
 service_accounts
+.cloudflared
 
 .DS_Store
 .venv
