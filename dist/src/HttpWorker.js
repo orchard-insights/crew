@@ -58,8 +58,8 @@ var HttpWorker = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_c) {
-                (_b = (_a = this.group) === null || _a === void 0 ? void 0 : _a.server) === null || _b === void 0 ? void 0 : _b.app.post('/execute/' + this.channel, function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-                    var input, parents, executeResponse, err_1, response;
+                (_b = (_a = this.group) === null || _a === void 0 ? void 0 : _a.server) === null || _b === void 0 ? void 0 : _b.app.post('/execute/' + this.channel, this.authMiddleware, function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+                    var input, parents, taskId, executeResponse, err_1, response;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -69,7 +69,8 @@ var HttpWorker = /** @class */ (function () {
                                 _a.trys.push([1, 3, , 4]);
                                 input = req.body.input;
                                 parents = req.body.parents;
-                                return [4 /*yield*/, this.executeTask(input, parents)];
+                                taskId = req.body.taskId;
+                                return [4 /*yield*/, this.executeTask(input, parents, taskId)];
                             case 2:
                                 executeResponse = _a.sent();
                                 if (this.pauseWorkgroupSeconds > 0) {
@@ -104,6 +105,32 @@ var HttpWorker = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, Promise.resolve()];
+            });
+        });
+    };
+    // Subclasses override this method to protect the task execution route provided by serve() above
+    HttpWorker.prototype.authMiddleware = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var requiredToken, providedToken;
+            return __generator(this, function (_a) {
+                requiredToken = process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN;
+                if (requiredToken) {
+                    providedToken = req.query.accessToken;
+                    if (!providedToken) {
+                        providedToken = req.body.accessToken;
+                    }
+                    if (!providedToken && req.headers && req.headers.authorization) {
+                        providedToken = req.headers.authorization.replace('Bearer ', '');
+                    }
+                    if (providedToken === requiredToken) {
+                        return [2 /*return*/, next()];
+                    }
+                    return [2 /*return*/, res.status(401).send({ error: 'Access token is invalid!' })];
+                }
+                else {
+                    return [2 /*return*/, next()];
+                }
+                return [2 /*return*/];
             });
         });
     };

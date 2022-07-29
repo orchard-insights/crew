@@ -24,12 +24,13 @@ export default abstract class HttpWorker {
   }
 
   async serve() {
-    this.group?.server?.app.post('/execute/' + this.channel, async (req: express.Request, res: express.Response) => {
+    this.group?.server?.app.post('/execute/' + this.channel, this.authMiddleware, async (req: express.Request, res: express.Response) => {
       this.pauseWorkgroupSeconds = 0
       try {
         const input = req.body.input
         const parents = req.body.parents
-        const executeResponse : any = await this.executeTask(input, parents)
+        const taskId = req.body.taskId
+        const executeResponse : any = await this.executeTask(input, parents, taskId)
         if (this.pauseWorkgroupSeconds > 0) {
           executeResponse.workgroupDelayInSeconds = this.pauseWorkgroupSeconds
         }
@@ -55,7 +56,28 @@ export default abstract class HttpWorker {
   }
 
   // Subclasses implement this method to do their thing
-  abstract executeTask(data : any, parents: any[]) : Promise<TaskResponse>
+  abstract executeTask(data : any, parents: any[], taskId: string) : Promise<TaskResponse>
+
+  // Subclasses override this method to protect the task execution route provided by serve() above
+  async authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const requiredToken = process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN
+    if (requiredToken) {
+      let providedToken = req.query.accessToken
+      if (!providedToken) {
+        providedToken = req.body.accessToken
+      }
+      if (!providedToken && req.headers && req.headers.authorization) {
+        providedToken = req.headers.authorization.replace('Bearer ', '')
+      }
+      if (providedToken === requiredToken) {
+        return next()
+      }
+      return res.status(401).send({ error: 'Access token is invalid!' })
+    }
+    else {
+      return next()
+    }
+  }
 
   // Sublclasses override this method to let worker group know if we are healthy or not
   isHealthy() : Promise<boolean> {

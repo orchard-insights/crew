@@ -156,7 +156,28 @@ export default class Operator {
 
       // Get operator for channel
       const { operatorCollection } = await initDb()
-      const operator = await operatorCollection.findOne({channel: channel}) as Operator
+
+      let operator: Operator
+      if (process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) {
+        // If all workers are HTTP and all are on a single base url then we can
+        // automatically create operators for every channel
+
+        // Allow virtual operators to authenticate their requests to workers with
+        // a token configured via env vars
+        const operatorRequestConfig : any = {}
+        if (process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN) {
+          operatorRequestConfig.headers = {
+            'Authorization': 'Bearer ' + process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN
+          }
+        }
+
+        // Create the virtual operator
+        operator = new Operator(channel, process.env.CREW_VIRTUAL_OPERATOR_BASE_URL + channel, operatorRequestConfig, false)
+        operator._id = new ObjectId('virtual_' + channel)
+      } else {
+        operator = await operatorCollection.findOne({channel: channel}) as Operator
+      }
+      
       if (operator) {
         const workerId = "operator_" + operator._id
 
@@ -180,7 +201,7 @@ export default class Operator {
           try {
             // Send request to operator's url
             console.log('~~ Operator making call to : ' + operator.url)
-            const response = await axios.post(operator.url, {input: task.input, parents}, config)
+            const response = await axios.post(operator.url, {input: task.input, parents, taskId: task._id}, config)
 
             // Unpack response
             const { error, output, children } = response.data

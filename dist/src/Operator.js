@@ -50,6 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var mongodb_1 = require("mongodb");
 var luxon_1 = require("luxon");
 var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
@@ -287,70 +288,91 @@ var Operator = /** @class */ (function () {
     };
     Operator.execute = function (taskId) {
         return __awaiter(this, void 0, void 0, function () {
-            var examineTask, channel, operatorCollection, operator, workerId, task, parents, config, response, _a, error, output, children, error_1;
+            var examineTask, channel, operatorCollection, operator, operatorRequestConfig, workerId, task, parents, config, response, _a, error, output, children, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, Task_1.default.findById(taskId)];
                     case 1:
                         examineTask = _b.sent();
-                        if (!examineTask) return [3 /*break*/, 16];
+                        if (!examineTask) return [3 /*break*/, 18];
                         channel = examineTask.channel;
                         return [4 /*yield*/, (0, database_1.default)()];
                     case 2:
                         operatorCollection = (_b.sent()).operatorCollection;
-                        return [4 /*yield*/, operatorCollection.findOne({ channel: channel })];
-                    case 3:
-                        operator = _b.sent();
-                        if (!operator) return [3 /*break*/, 16];
+                        operator = void 0;
+                        if (!process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) return [3 /*break*/, 3];
+                        operatorRequestConfig = {};
+                        if (process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN) {
+                            operatorRequestConfig.headers = {
+                                'Authorization': 'Bearer ' + process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN
+                            };
+                        }
+                        // Create the virtual operator
+                        operator = new Operator(channel, process.env.CREW_VIRTUAL_OPERATOR_BASE_URL + channel, operatorRequestConfig, false);
+                        operator._id = new mongodb_1.ObjectId('virtual_' + channel);
+                        return [3 /*break*/, 5];
+                    case 3: return [4 /*yield*/, operatorCollection.findOne({ channel: channel })];
+                    case 4:
+                        operator = (_b.sent());
+                        _b.label = 5;
+                    case 5:
+                        if (!operator) return [3 /*break*/, 18];
                         workerId = "operator_" + operator._id;
                         if (operator.isPaused) {
                             return [2 /*return*/];
                         }
                         return [4 /*yield*/, Task_1.default.operatorAcquire(taskId, workerId)];
-                    case 4:
+                    case 6:
                         task = _b.sent();
-                        if (!(task && task._id)) return [3 /*break*/, 16];
+                        if (!(task && task._id)) return [3 /*break*/, 18];
                         console.log('~~ execute task ' + task._id + ' (operator)');
                         return [4 /*yield*/, Task_1.default.getParentsData(task)
                             // Prepare axios request config
                         ];
-                    case 5:
+                    case 7:
                         parents = _b.sent();
                         config = __assign({}, operator.requestConfig);
-                        _b.label = 6;
-                    case 6:
-                        _b.trys.push([6, 9, , 16]);
-                        return [4 /*yield*/, axios_1.default.post(operator.url, { input: task.input, parents: parents }, config)
+                        _b.label = 8;
+                    case 8:
+                        _b.trys.push([8, 11, , 18]);
+                        // Send request to operator's url
+                        console.log('~~ Operator making call to : ' + operator.url);
+                        return [4 /*yield*/, axios_1.default.post(operator.url, { input: task.input, parents: parents, taskId: task._id }, config)
                             // Unpack response
                         ];
-                    case 7:
+                    case 9:
                         response = _b.sent();
                         _a = response.data, error = _a.error, output = _a.output, children = _a.children;
                         // Release the task
                         return [4 /*yield*/, Task_1.default.release(task._id, workerId, error, output, children)];
-                    case 8:
+                    case 10:
                         // Release the task
                         _b.sent();
-                        return [3 /*break*/, 16];
-                    case 9:
-                        error_1 = _b.sent();
-                        if (!(axios_1.default.isAxiosError(error_1) && error_1.response && error_1.response.data && error_1.response.data.error)) return [3 /*break*/, 11];
-                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.response.data.error)];
-                    case 10:
-                        _b.sent();
-                        return [3 /*break*/, 15];
+                        return [3 /*break*/, 18];
                     case 11:
-                        if (!(axios_1.default.isAxiosError(error_1) && error_1.response && error_1.response.data && error_1.response.data.message)) return [3 /*break*/, 13];
-                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.response.data.message)];
+                        error_1 = _b.sent();
+                        console.error('~~ Operator error', error_1);
+                        if (!(axios_1.default.isAxiosError(error_1) && error_1.response && error_1.response.data && error_1.response.data.error)) return [3 /*break*/, 13];
+                        console.error('~~ Operator http call error', error_1.response.data.error);
+                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.response.data.error)];
                     case 12:
                         _b.sent();
-                        return [3 /*break*/, 15];
-                    case 13: return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.message)];
+                        return [3 /*break*/, 17];
+                    case 13:
+                        if (!(axios_1.default.isAxiosError(error_1) && error_1.response && error_1.response.data && error_1.response.data.message)) return [3 /*break*/, 15];
+                        console.error('~~ Operator http call error', error_1.response.data.message);
+                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.response.data.message)];
                     case 14:
                         _b.sent();
-                        _b.label = 15;
-                    case 15: return [3 /*break*/, 16];
-                    case 16: return [2 /*return*/];
+                        return [3 /*break*/, 17];
+                    case 15:
+                        console.error('~~ Operator http call error', error_1.message);
+                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error_1.message)];
+                    case 16:
+                        _b.sent();
+                        _b.label = 17;
+                    case 17: return [3 /*break*/, 18];
+                    case 18: return [2 /*return*/];
                 }
             });
         });
