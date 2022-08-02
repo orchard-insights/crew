@@ -150,9 +150,9 @@ export default class Operator {
 
   static async execute(taskId: ObjectId) : Promise<void> {
     // Load the task to get channel to execute in, we are not going to execute this specific task though, only whatever we can acquire in its channel.
-    const examineTask = await Task.findById(taskId)
-    if (examineTask) {
-      const channel = examineTask.channel
+    const executeTask = await Task.findById(taskId)
+    if (executeTask) {
+      const channel = executeTask.channel
 
       // Get operator for channel
       const { operatorCollection } = await initDb()
@@ -173,7 +173,7 @@ export default class Operator {
 
         // Create the virtual operator
         operator = new Operator(channel, process.env.CREW_VIRTUAL_OPERATOR_BASE_URL + channel, operatorRequestConfig, false)
-        operator._id = new ObjectId('virtual_' + channel)
+        operator._id = ObjectId.createFromTime(new Date().getTime() / 1000)
       } else {
         operator = await operatorCollection.findOne({channel: channel}) as Operator
       }

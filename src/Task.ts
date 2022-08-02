@@ -876,7 +876,7 @@ export default class Task {
 
     if (!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed) {
       const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
-      if (operator) {
+      if (operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) {
         await messenger.publishExecuteTask(id.toString())
       }
     } else if (examineDelay) {
