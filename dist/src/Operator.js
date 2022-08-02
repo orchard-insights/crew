@@ -288,14 +288,14 @@ var Operator = /** @class */ (function () {
     };
     Operator.execute = function (taskId) {
         return __awaiter(this, void 0, void 0, function () {
-            var examineTask, channel, operatorCollection, operator, operatorRequestConfig, workerId, task, parents, config, response, _a, error, output, children, error_1;
+            var executeTask, channel, operatorCollection, operator, operatorRequestConfig, workerId, task, parents, config, response, _a, error, output, children, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, Task_1.default.findById(taskId)];
                     case 1:
-                        examineTask = _b.sent();
-                        if (!examineTask) return [3 /*break*/, 18];
-                        channel = examineTask.channel;
+                        executeTask = _b.sent();
+                        if (!executeTask) return [3 /*break*/, 18];
+                        channel = executeTask.channel;
                         return [4 /*yield*/, (0, database_1.default)()];
                     case 2:
                         operatorCollection = (_b.sent()).operatorCollection;
@@ -309,7 +309,7 @@ var Operator = /** @class */ (function () {
                         }
                         // Create the virtual operator
                         operator = new Operator(channel, process.env.CREW_VIRTUAL_OPERATOR_BASE_URL + channel, operatorRequestConfig, false);
-                        operator._id = new mongodb_1.ObjectId('virtual_' + channel);
+                        operator._id = mongodb_1.ObjectId.createFromTime(new Date().getTime() / 1000);
                         return [3 /*break*/, 5];
                     case 3: return [4 /*yield*/, operatorCollection.findOne({ channel: channel })];
                     case 4:

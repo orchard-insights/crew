@@ -1166,7 +1166,7 @@ var Task = /** @class */ (function () {
                         return [4 /*yield*/, operatorCollection.findOne({ channel: task.channel })];
                     case 4:
                         operator = _a.sent();
-                        if (!operator) return [3 /*break*/, 6];
+                        if (!(operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL)) return [3 /*break*/, 6];
                         return [4 /*yield*/, messenger.publishExecuteTask(id.toString())];
                     case 5:
                         _a.sent();
