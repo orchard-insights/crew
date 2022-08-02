@@ -45,6 +45,7 @@ var luxon_1 = require("luxon");
 var TaskGroup_1 = __importDefault(require("./TaskGroup"));
 var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
+var CloudTasks_1 = require("./CloudTasks");
 /**
  * @openapi
  * components:
@@ -958,35 +959,6 @@ var Task = /** @class */ (function () {
             });
         });
     };
-    Task.freeAbandoned = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, abandonedSecondsThreshold, threshold, updateResult;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, database_1.default)()];
-                    case 1:
-                        taskCollection = (_a.sent()).taskCollection;
-                        abandonedSecondsThreshold = parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60');
-                        threshold = luxon_1.DateTime.utc().minus({ seconds: abandonedSecondsThreshold }).toJSDate();
-                        return [4 /*yield*/, taskCollection.updateMany({
-                                isComplete: false,
-                                assignedTo: { $ne: null },
-                                assignedAt: { $lt: threshold }
-                            }, {
-                                $set: {
-                                    assignedTo: null,
-                                    assignedAt: null
-                                },
-                                $inc: { remainingAttempts: -1 },
-                                $push: { errors: "Task not completed in " + abandonedSecondsThreshold + " seconds." }
-                            })];
-                    case 2:
-                        updateResult = _a.sent();
-                        return [2 /*return*/, updateResult];
-                }
-            });
-        });
-    };
     Task.getParentsData = function (task) {
         return __awaiter(this, void 0, void 0, function () {
             var parents, _i, _a, parentId, parent_4;
@@ -1069,6 +1041,144 @@ var Task = /** @class */ (function () {
                         _i++;
                         return [3 /*break*/, 3];
                     case 10: return [2 /*return*/, updatedCount];
+                }
+            });
+        });
+    };
+    Task.operatorAcquire = function (id, workerId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var taskCollection, now, assignedAt, assignedAtCutoff, assignResult, task;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, database_1.default)()];
+                    case 1:
+                        taskCollection = (_a.sent()).taskCollection;
+                        now = luxon_1.DateTime.utc().toJSDate();
+                        assignedAt = now;
+                        assignedAtCutoff = luxon_1.DateTime.utc().minus({ seconds: parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60') }).toJSDate();
+                        return [4 /*yield*/, taskCollection.findOneAndUpdate({
+                                _id: id,
+                                isComplete: false,
+                                isPaused: false,
+                                remainingAttempts: { $gt: 0 },
+                                // Can acquire if
+                                // assignedTo is null
+                                //   AND runAfter is null OR has passed
+                                //   AND parentsComplete is true or size 0
+                                // OR
+                                // assignedAt + CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS seconds has passed (TODO refreshable lease based on assignedAt - if task exec can update own assignedAt?)
+                                //   AND runAfter is null OR has passed
+                                //   AND parentsComplete is true or size 0
+                                $or: [
+                                    { $and: [{
+                                                assignedTo: null,
+                                                $and: [
+                                                    { $or: [
+                                                            { runAfter: { $lt: now } },
+                                                            { runAfter: null }
+                                                        ] },
+                                                    { $or: [
+                                                            { parentsComplete: true },
+                                                            { parentIds: { $size: 0 } }
+                                                        ] }
+                                                ]
+                                            }] },
+                                    { $and: [{
+                                                assignedAt: { $lt: assignedAtCutoff },
+                                                $and: [
+                                                    { $or: [
+                                                            { runAfter: { $lt: now } },
+                                                            { runAfter: null }
+                                                        ] },
+                                                    { $or: [
+                                                            { parentsComplete: true },
+                                                            { parentIds: { $size: 0 } }
+                                                        ] }
+                                                ]
+                                            }] }
+                                ]
+                            }, { $set: { assignedTo: workerId, assignedAt: assignedAt } }, { sort: { priority: -1, createdAt: 1 } } // 1 = ascending, -1 = descending
+                            )];
+                    case 2:
+                        assignResult = _a.sent();
+                        if (!assignResult.value) {
+                            return [2 /*return*/, null];
+                        }
+                        return [4 /*yield*/, Task.findById(assignResult.value._id)
+                            // Mark tasks with same key and channel as also in progress
+                        ];
+                    case 3:
+                        task = _a.sent();
+                        if (!task.key) return [3 /*break*/, 5];
+                        return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, channel: task.channel, key: task.key }, {
+                                $set: { assignedTo: workerId, assignedAt: assignedAt }
+                            })];
+                    case 4:
+                        _a.sent();
+                        realtime_1.default.emit(task.taskGroupId + '', 'task:acquire:key', {
+                            channel: task.channel,
+                            key: task.key,
+                            update: {
+                                assignedTo: workerId,
+                                assignedAt: assignedAt
+                            }
+                        });
+                        _a.label = 5;
+                    case 5:
+                        realtime_1.default.emit(task.taskGroupId + '', 'task:update', task);
+                        return [2 /*return*/, task];
+                }
+            });
+        });
+    };
+    Task.examine = function (id) {
+        return __awaiter(this, void 0, void 0, function () {
+            var operatorCollection, task, messenger, runAfterHasPassed, examineDelay, now, operator;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, database_1.default)()];
+                    case 1:
+                        operatorCollection = (_a.sent()).operatorCollection;
+                        return [4 /*yield*/, Task.findById(id)];
+                    case 2:
+                        task = _a.sent();
+                        return [4 /*yield*/, (0, CloudTasks_1.getMessenger)()
+                            // If task is
+                            // not complete,
+                            // not assigned,
+                            // has remaining attempts,
+                            // and has an operator for its channel
+                            // then publish an event on the execute message bus.
+                        ];
+                    case 3:
+                        messenger = _a.sent();
+                        runAfterHasPassed = true;
+                        examineDelay = 0;
+                        if (task.runAfter) {
+                            now = new Date();
+                            if (now < task.runAfter) {
+                                runAfterHasPassed = false;
+                                // re-publish examine with a delay that is after runAfter
+                                examineDelay = Math.ceil((task.runAfter.getTime() - now.getTime()) / 1000) + 1;
+                            }
+                        }
+                        if (!(!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed)) return [3 /*break*/, 7];
+                        return [4 /*yield*/, operatorCollection.findOne({ channel: task.channel })];
+                    case 4:
+                        operator = _a.sent();
+                        if (!(operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, messenger.publishExecuteTask(id.toString())];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [3 /*break*/, 9];
+                    case 7:
+                        if (!examineDelay) return [3 /*break*/, 9];
+                        return [4 /*yield*/, messenger.publishExamineTask(id.toString(), examineDelay)];
+                    case 8:
+                        _a.sent();
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });

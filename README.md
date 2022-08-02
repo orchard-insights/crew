@@ -16,6 +16,7 @@ Features:
 - Can manage rate limit errors by pausing all tasks in same workgroup
 - Merge duplicate tasks
 - Workers can be written in any language
+- Workers can either poll for tasks, or receive them via webhooks
 
 ## Quickstart
 
@@ -127,6 +128,8 @@ server.listen(port, () => {
 })
 ```
 
+Workers that implement HttpWorker and are invoked via web requests can override the authMiddleware function and provide their own authentication middleware as well.
+
 ### About Tree Structure
 
 The tasks in Crew can be composed to form a tree structure.  Each task can have zero or many parents. Tasks can also have zero or many children.  The parentIds field on Tasks is used to form these relationships.  *A task will never be assigned to a worker until all of it's parent tasks have completed successfully.*
@@ -168,6 +171,39 @@ Workers should follow these rules:
 ### About Workgroups
 
 Crew is designed to help manage rate limit errors via workgroups.  When a rate limit error is encountered all the tasks within a workgroup can be delayed by a specific amount of time by passing a "workgroupDelayInSeconds" parameter to the release API endpoint.  Since workgroups will often be organized around a specific API key it is recommended that you use an md5 hash of the API key instead of the key itself when creating workgroup names.
+
+### HttpWorker vs Worker
+
+Crew provides two execution models for workers : Polling, and Http
+
+The default model is polling where workers must use the /acquire and /release API endpoint to request and complete tasks. When using this model you can use the built-in Worker class to implement your workers.
+
+Crew version 1.0.12 added the ability for workers to be invoked via http calls.  This allows workers to be hosted as web apps or cloud functions.  When using this model you can use the built-in HttpWorker class to implement your workers.  Note that using HttpWorkers require additional configuration - see the "Google Cloud Tasks Config" section below.
+
+Crew delivers tasks to http workers via POST requests (JSON) that contain the following parameters:
+- input : The input for the task
+- parents : Data from each of the task's parents (channel, input, and output)
+- taskId : The id of the task
+
+Http workers should in turn respond with either an http error code, or with a json object that contains a [TaskResponse](./src/TaskResponse.ts):
+- output (anything)
+- children (array of [TaskChild](./src/TaskChild.ts))
+
+### About Operators
+
+An Operator is used to specify which http endpoint to use when delivering a task to an HttpWorker.  Operators contain the following fields:
+- channel: What (Task.)channel this operator represents.
+- url: Where to POST tasks within the channel.  Post body params are : input, parents, and taskId
+- requestConfig: Additional configuration to apply to the POST request that is sent to the worker (such as authentication headers) - see [Axios' Request Config](https://axios-http.com/docs/req_config).
+- isPaused: Whether this operator is paused or not.
+
+Note, if all of your workers use the same base URL, you can skip creating operators for every channel by setting environment variable : CREW_VIRTUAL_OPERATOR_BASE_URL
+
+For example if you set CREW_VIRTUAL_OPERATOR_BASE_URL = http://localhost/myworkers/
+
+Then tasks in channel send_spam will be posted to http://localhost/myworkers/send_spam
+
+Note that you can use the CREW_VIRTUAL_OPERATOR_AUTH_TOKEN to implement basic token based authentication for HttpWorkers.  Overriding HttpWorker's authMiddleware method can also be used to provide other forms of authentication in workers.
 
 ## Development
 
@@ -263,11 +299,52 @@ yarn cli start
 yarn cli work
 ```
 
+When using operator based workers you will need to allow Google Cloud Tasks to be able to call your api:
+```
+ngrok http 3000
+```
+
+Then set CREW_API_PUBLIC_BASE_URL env var:
+
+```
+CREW_API_PUBLIC_BASE_URL=https://08d0-172-221-82-130.ngrok.io/
+```
+
 #### 4. Run tests
 
 ```
 yarn test
 ```
+
+#### 5. Google Cloud Tasks Config (optional)
+
+In order to use HttpWorkers you will need to provide access to a [Google Cloud Tasks](https://cloud.google.com/tasks) project.
+
+Begin by enabling the Cloud Tasks API, and then setup two Queues with these names:
+
+```
+crew-execute
+crew-examine
+```
+
+Then you will need to obtain a google cloud service account file that provides at least the ["createTask"](https://cloud.google.com/tasks/docs/reference-access-control) permission.
+
+Then configure the following environment variables to point crew at your Cloud Tasks instance:
+
+```
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
+CREW_QUEUE_LOCATION=todo-gc-location
+CREW_QUEUE_PROJECT=your-project-name
+```
+
+Also note that when using HttpWorkers you'll also likely want to set these two env vars:
+
+```
+CREW_VIRTUAL_OPERATOR_BASE_URL
+CREW_VIRTUAL_OPERATOR_AUTH_TOKEN
+```
+
+See the "About Operators" section above for more information about these two env vars.
 
 ### Environment variables
 

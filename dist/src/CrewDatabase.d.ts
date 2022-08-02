@@ -4,6 +4,7 @@ export default interface CrewDatabase {
     db: Db;
     groupCollection: Collection;
     taskCollection: Collection;
+    operatorCollection: Collection;
     close: () => void;
 }
 //# sourceMappingURL=CrewDatabase.d.ts.map

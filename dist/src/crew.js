@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkerServer = exports.TaskError = exports.WorkerGroup = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
+exports.WorkerServer = exports.TaskError = exports.HttpWorkerGroup = exports.WorkerGroup = exports.HttpWorker = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
 var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
@@ -50,8 +50,12 @@ var Task_1 = __importDefault(require("./Task"));
 exports.Task = Task_1.default;
 var Worker_1 = __importDefault(require("./Worker"));
 exports.Worker = Worker_1.default;
+var HttpWorker_1 = __importDefault(require("./HttpWorker"));
+exports.HttpWorker = HttpWorker_1.default;
 var WorkerGroup_1 = __importDefault(require("./WorkerGroup"));
 exports.WorkerGroup = WorkerGroup_1.default;
+var HttpWorkerGroup_1 = __importDefault(require("./HttpWorkerGroup"));
+exports.HttpWorkerGroup = HttpWorkerGroup_1.default;
 var WorkerServer_1 = __importDefault(require("./WorkerServer"));
 exports.WorkerServer = WorkerServer_1.default;
 var TaskError_1 = __importDefault(require("./TaskError"));
@@ -63,6 +67,7 @@ var swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 var swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 var path_1 = __importDefault(require("path"));
 var realtime_1 = __importDefault(require("./realtime"));
+var Operator_1 = __importDefault(require("./Operator"));
 function crew(options) {
     var _this = this;
     var _a;
@@ -160,6 +165,12 @@ function crew(options) {
             });
         }); };
     }
+    function authorizeCloudTaskEndpoint(req, res, next) {
+        if (req.query.accessToken = process.env.CREW_CLOUD_TASK_ACCESS_TOKEN || '') {
+            return next();
+        }
+        return res.status(401).send({ error: 'Access token is invalid!' });
+    }
     var client = null;
     // Connect to mongdb and then setup the routes
     (0, database_1.default)().then(function (database) {
@@ -173,6 +184,10 @@ function crew(options) {
         database.client.on('topologyClosed', function () {
             databaseConnected = false;
             console.log('Database connection closed!');
+        });
+        // Bootstrap operators (also done in cron below)
+        Operator_1.default.bootstrapAll().then(function () {
+            console.log("~~ bootstraped operators");
         });
         // Home
         router.get('/', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
@@ -1094,6 +1109,90 @@ function crew(options) {
         }); }));
         /**
          * @openapi
+         * /api/v1/task/{id}/examine:
+         *   post:
+         *     description: Orchestration uses this enpoint to examine a task to find out if it is eligible for execution.
+         *     tags:
+         *       - task
+         *     parameters:
+         *       - in: path
+         *         name: id
+         *         required: true
+         *         description: Id of task to examine
+         *         schema:
+         *           type: string
+         *     responses:
+         *       200:
+         *         description: Examine result.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         */
+        router.post('/api/v1/task/:id/examine', authorizeCloudTaskEndpoint, unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var task;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Task_1.default.findById(new mongodb_1.ObjectId(req.params.id))];
+                    case 1:
+                        task = _a.sent();
+                        if (!task) return [3 /*break*/, 3];
+                        return [4 /*yield*/, Task_1.default.examine(new mongodb_1.ObjectId(task._id))];
+                    case 2:
+                        _a.sent();
+                        res.json({ success: true });
+                        return [3 /*break*/, 4];
+                    case 3:
+                        res.json({ task: null });
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/task/{id}/execute:
+         *   post:
+         *     description: Orchestration uses this enpoint to execute a task to find out if it is eligible for execution.
+         *     tags:
+         *       - task
+         *     parameters:
+         *       - in: path
+         *         name: id
+         *         required: true
+         *         description: Id of task to execute
+         *         schema:
+         *           type: string
+         *     responses:
+         *       200:
+         *         description: Execute result.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         */
+        router.post('/api/v1/task/:id/execute', authorizeCloudTaskEndpoint, unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var task;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Task_1.default.findById(new mongodb_1.ObjectId(req.params.id))];
+                    case 1:
+                        task = _a.sent();
+                        if (!task) return [3 /*break*/, 3];
+                        return [4 /*yield*/, Operator_1.default.execute(new mongodb_1.ObjectId(task._id))];
+                    case 2:
+                        _a.sent();
+                        res.json({ success: true });
+                        return [3 /*break*/, 4];
+                    case 3:
+                        res.json({ task: null });
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
          * /api/v1/task/{id}/release:
          *   post:
          *     description: Workers use this endpoint to return the result of completing or failing a task.
@@ -1143,12 +1242,239 @@ function crew(options) {
                 }
             });
         }); }));
+        /**
+         * @openapi
+         * /api/v1/operators:
+         *   get:
+         *     description: Retrieve a list of operators.
+         *     tags:
+         *       - operator
+         *     parameters:
+         *       - in: query
+         *         name: limit
+         *         required: false
+         *         description: Maximum number of operators to retrieve.
+         *         default: 50
+         *         schema:
+         *           type: integer
+         *       - in: query
+         *         name: skip
+         *         required: false
+         *         description: How many operators to skip.
+         *         default: 0
+         *         schema:
+         *           type: integer
+         *     responses:
+         *       200:
+         *         description: An array of operators.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: array
+         *               items:
+         *                 type: object
+         *                 $ref: '#/components/schemas/Operator'
+         */
+        router.get('/api/v1/operators', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var limit, skip, operators;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        limit = parseInt(req.query.limit || '50');
+                        skip = parseInt(req.query.skip || '0');
+                        return [4 /*yield*/, Operator_1.default.findAll(limit, skip)];
+                    case 1:
+                        operators = _a.sent();
+                        res.json(operators);
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/operators/count:
+         *   get:
+         *     description: Retrieve the total count of operators.
+         *     tags:
+         *       - task_group
+         *     responses:
+         *       200:
+         *         description: The total count of operators.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         *               properties:
+         *                 count:
+         *                   type: integer
+         */
+        router.get('/api/v1/operators/count', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var count;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Operator_1.default.countAll()];
+                    case 1:
+                        count = _a.sent();
+                        res.json({ count: count });
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/operator/{id}:
+         *   get:
+         *     description: Retrieve a single operator.
+         *     tags:
+         *       - operator
+         *     parameters:
+         *       - in: path
+         *         name: id
+         *         required: true
+         *         description: Id of the operator to retrieve.
+         *         schema:
+         *           type: string
+         *     responses:
+         *       200:
+         *         description: An operator.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         *               $ref: '#/components/schemas/Operator'
+         */
+        router.get('/api/v1/operator/:id', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var operator;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Operator_1.default.findById(new mongodb_1.ObjectId(req.params.id))];
+                    case 1:
+                        operator = _a.sent();
+                        if (operator) {
+                            res.json(operator);
+                        }
+                        else {
+                            res.status(404).json({ message: "Operator with id " + req.params.id + " not found!" });
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/operators:
+         *   post:
+         *     description: Create a new operator.
+         *     tags:
+         *       - operator
+         *     requestBody:
+         *       required: true
+         *       content:
+         *         application/json:
+         *           schema:
+         *             type: object
+         *             $ref: '#/components/schemas/CreateOperator'
+         *     responses:
+         *       200:
+         *         description: The new operator.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         *               $ref: '#/components/schemas/Operator'
+         */
+        router.post('/api/v1/operators', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var operator;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Operator_1.default.fromData(req.body)];
+                    case 1:
+                        operator = _a.sent();
+                        res.json(operator);
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/operator/{id}:
+         *   put:
+         *     description: Update an operator.
+         *     tags:
+         *       - operator
+         *     parameters:
+         *       - in: path
+         *         name: id
+         *         required: true
+         *         description: Id of the operator to update.
+         *         schema:
+         *           type: string
+         *     requestBody:
+         *       required: true
+         *       content:
+         *         application/json:
+         *           schema:
+         *             type: object
+         *             $ref: '#/components/schemas/CreateOperator'
+         *     responses:
+         *       200:
+         *         description: The updated operator.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         *               $ref: '#/components/schemas/Operator'
+         */
+        router.put('/api/v1/operator/:id', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var operator;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Operator_1.default.updateById(new mongodb_1.ObjectId(req.params.id), req.body)];
+                    case 1:
+                        operator = _a.sent();
+                        res.json(operator);
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/operator/{id}:
+         *   delete:
+         *     description: Delete an operator.
+         *     tags:
+         *       - operator
+         *     parameters:
+         *       - in: path
+         *         name: id
+         *         required: true
+         *         description: Id of the operator to delete.
+         *         schema:
+         *           type: string
+         *     responses:
+         *       200:
+         *         description: MongoDB delete result.
+         *         content:
+         *           application/json:
+         *             schema:
+         *               type: object
+         */
+        router.delete('/api/v1/operator/:id', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var deleteResult;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Operator_1.default.deleteById(new mongodb_1.ObjectId(req.params.id))];
+                    case 1:
+                        deleteResult = _a.sent();
+                        res.json(deleteResult);
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
     });
-    var freeAbandonedCron = node_cron_1.default.schedule('* * * * *', function () {
-        Task_1.default.freeAbandoned().then(function (result) {
-            if (result.modifiedCount > 0) {
-                console.log("~~ freed " + result.modifiedCount + " abandoned tasks");
-            }
+    var bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
+        Operator_1.default.bootstrapAll().then(function () {
+            console.log("~~ bootstraped operators");
         });
     });
     var cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {
@@ -1178,9 +1504,9 @@ function crew(options) {
                         case 0:
                             // Cleanup all resources
                             console.log('~~ Terminus signal : cleaning up...');
-                            freeAbandonedCron.stop();
                             cleanExpiredGroupsCron.stop();
                             syncParentsCompleteCron.stop();
+                            bootstrapOperatorsCron.stop();
                             // Close database connection
                             console.log('~~ Closing database connection');
                             if (!client) return [3 /*break*/, 2];

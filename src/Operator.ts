@@ -5,7 +5,7 @@ import realtime from './realtime'
 import initDb from './database'
 import Task from "./Task"
 import axios, { AxiosRequestConfig } from 'axios'
-import { getMessenger } from "./PubSub"
+import { getMessenger } from "./CloudTasks"
 
 /**
  * @openapi
@@ -137,7 +137,7 @@ export default class Operator {
         const messenger = await getMessenger()
         for (const task of tasks) {
           if (task._id) {
-            messenger.publishExamineTask(task._id.toString())
+            messenger.publishExamineTask(task._id.toString(), 0)
           }
         }
         skip = skip + limit
@@ -150,13 +150,34 @@ export default class Operator {
 
   static async execute(taskId: ObjectId) : Promise<void> {
     // Load the task to get channel to execute in, we are not going to execute this specific task though, only whatever we can acquire in its channel.
-    const examineTask = await Task.findById(taskId)
-    if (examineTask) {
-      const channel = examineTask.channel
+    const executeTask = await Task.findById(taskId)
+    if (executeTask) {
+      const channel = executeTask.channel
 
       // Get operator for channel
       const { operatorCollection } = await initDb()
-      const operator = await operatorCollection.findOne({channel: channel}) as Operator
+
+      let operator: Operator
+      if (process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) {
+        // If all workers are HTTP and all are on a single base url then we can
+        // automatically create operators for every channel
+
+        // Allow virtual operators to authenticate their requests to workers with
+        // a token configured via env vars
+        const operatorRequestConfig : any = {}
+        if (process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN) {
+          operatorRequestConfig.headers = {
+            'Authorization': 'Bearer ' + process.env.CREW_VIRTUAL_OPERATOR_AUTH_TOKEN
+          }
+        }
+
+        // Create the virtual operator
+        operator = new Operator(channel, process.env.CREW_VIRTUAL_OPERATOR_BASE_URL + channel, operatorRequestConfig, false)
+        operator._id = ObjectId.createFromTime(new Date().getTime() / 1000)
+      } else {
+        operator = await operatorCollection.findOne({channel: channel}) as Operator
+      }
+      
       if (operator) {
         const workerId = "operator_" + operator._id
 
@@ -179,20 +200,25 @@ export default class Operator {
 
           try {
             // Send request to operator's url
-            const response = await axios.post(operator.url, {input: task.input, parents}, config)
+            console.log('~~ Operator making call to : ' + operator.url)
+            const response = await axios.post(operator.url, {input: task.input, parents, taskId: task._id}, config)
 
             // Unpack response
             const { error, output, children } = response.data
             // Release the task
             await Task.release(task._id, workerId, error, output, children)
           } catch (error) {
+            console.error('~~ Operator error', error)
             if (axios.isAxiosError(error) && error.response && error.response.data && error.response.data.error) {
+              console.error('~~ Operator http call error', error.response.data.error)
               await Task.release(task._id, workerId, error.response.data.error)
             } else if (axios.isAxiosError(error) && error.response && error.response.data && error.response.data.message) {
+              console.error('~~ Operator http call error', error.response.data.message)
               await Task.release(task._id, workerId, error.response.data.message)
             } else {
+              console.error('~~ Operator http call error', (error as Error).message)
               await Task.release(task._id, workerId, (error as Error).message)
-            }          
+            }
           }
         }
       }
