@@ -32,6 +32,11 @@ class CloudTasksMessenger implements Messenger {
     const location = process.env.CREW_QUEUE_LOCATION || '';
     const project = process.env.CREW_QUEUE_PROJECT || '';
 
+    if (!location || !project) {
+      console.warn('Unable to dispatch cloud task - CREW_QUEUE_LOCATION or CREW_QUEUE_PROJECT environment variable not set!')
+      return
+    }
+
     // Construct the fully qualified queue name.
     const parent = cloudTasksClient.queuePath(project, location, queue);
 
@@ -61,11 +66,15 @@ class CloudTasksMessenger implements Messenger {
     }
 
     // Send create task request.
-    console.log("Creating cloud task:");
-    console.log(task);
-    const queueRequest = {parent: parent, task: task};
-    const [queueResponse] = await cloudTasksClient.createTask(queueRequest);
-    console.log(`Created cloud task ${queueResponse.name}`);
+    try {
+      console.log("Creating cloud task:");
+      console.log(task);
+      const queueRequest = {parent: parent, task: task};
+      const [queueResponse] = await cloudTasksClient.createTask(queueRequest);
+      console.log(`Created cloud task ${queueResponse.name}`);
+    } catch (error) {
+      console.error('Failed to create cloud task!', error)
+    }
   }
 }
 
