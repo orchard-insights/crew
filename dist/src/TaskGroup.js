@@ -43,6 +43,8 @@ var luxon_1 = require("luxon");
 var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
 var lodash_1 = __importDefault(require("lodash"));
+var Task_1 = __importDefault(require("./Task"));
+var Messenger_1 = require("./Messenger");
 /**
  * @openapi
  * components:
@@ -208,7 +210,7 @@ var TaskGroup = /** @class */ (function () {
     TaskGroup.retryById = function (id, remainingAttempts) {
         if (remainingAttempts === void 0) { remainingAttempts = 2; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, group;
+            var taskCollection, group, messenger, tasks, _i, tasks_1, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -224,6 +226,16 @@ var TaskGroup = /** @class */ (function () {
                             })];
                     case 3:
                         _a.sent();
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                    case 4:
+                        messenger = _a.sent();
+                        return [4 /*yield*/, Task_1.default.findAllInGroup(id)];
+                    case 5:
+                        tasks = _a.sent();
+                        for (_i = 0, tasks_1 = tasks; _i < tasks_1.length; _i++) {
+                            task = tasks_1[_i];
+                            messenger.publishExamineTask(task._id.toString(), 0);
+                        }
                         realtime_1.default.emit(id + '', 'group:retry', null);
                         return [2 /*return*/, group];
                 }
@@ -233,7 +245,7 @@ var TaskGroup = /** @class */ (function () {
     TaskGroup.resetById = function (id, remainingAttempts) {
         if (remainingAttempts === void 0) { remainingAttempts = 5; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, group, seedCount, res;
+            var taskCollection, group, seedCount, res, messenger, tasks, _i, tasks_2, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -267,6 +279,16 @@ var TaskGroup = /** @class */ (function () {
                         })];
                     case 6:
                         _a.sent();
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                    case 7:
+                        messenger = _a.sent();
+                        return [4 /*yield*/, Task_1.default.findAllInGroup(id)];
+                    case 8:
+                        tasks = _a.sent();
+                        for (_i = 0, tasks_2 = tasks; _i < tasks_2.length; _i++) {
+                            task = tasks_2[_i];
+                            messenger.publishExamineTask(task._id.toString(), 0);
+                        }
                         realtime_1.default.emit(id + '', 'group:reset', null);
                         return [2 /*return*/, group];
                 }
@@ -276,7 +298,7 @@ var TaskGroup = /** @class */ (function () {
     TaskGroup.syncPauseById = function (id, isPaused) {
         if (isPaused === void 0) { isPaused = true; }
         return __awaiter(this, void 0, void 0, function () {
-            var _a, groupCollection, taskCollection, group;
+            var _a, groupCollection, taskCollection, group, messenger, tasks, _i, tasks_3, task;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -304,6 +326,16 @@ var TaskGroup = /** @class */ (function () {
                         // Pause task group
                         _b.sent();
                         group.isPaused = isPaused;
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                    case 5:
+                        messenger = _b.sent();
+                        return [4 /*yield*/, Task_1.default.findAllInGroup(id)];
+                    case 6:
+                        tasks = _b.sent();
+                        for (_i = 0, tasks_3 = tasks; _i < tasks_3.length; _i++) {
+                            task = tasks_3[_i];
+                            messenger.publishExamineTask(task._id.toString(), 0);
+                        }
                         realtime_1.default.emit(id + '', 'group:syncPause', { isPaused: isPaused });
                         return [2 /*return*/, group];
                 }

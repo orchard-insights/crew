@@ -6,7 +6,7 @@ import TaskChild from "./TaskChild"
 import Operator from "./Operator"
 import realtime from './realtime'
 import initDb from './database'
-import { getMessenger } from './CloudTasks'
+import { getMessenger } from './Messenger'
 
 /**
  * @openapi
@@ -249,6 +249,10 @@ export default class Task {
     )
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
+    if (!task.isComplete) {
+      const messenger = await getMessenger()
+      messenger.publishExamineTask(id.toString(), 0)
+    }
     return task
   }
 
@@ -266,6 +270,17 @@ export default class Task {
   static async findAllInChannel(limit = 50, skip = 0, channel: string) : Promise<Task[]> {
     const { taskCollection } = await initDb()
     const tasks = await taskCollection.find({ channel }).limit(limit).skip(skip).sort( { createdAt: -1 } ).toArray()
+    return tasks as Task[]
+  }
+
+  // limit less than 0 means return all
+  static async findAllIncompleteInWorkgroup(workgroup: string, limit = -1, skip = 0) : Promise<Task[]> {
+    const { taskCollection } = await initDb()
+    const q = taskCollection.find({ workgroup, isComplete: false })
+    if (limit > 0) {
+      q.limit(limit)
+    }
+    const tasks = await q.skip(skip).sort( { createdAt: -1 } ).toArray()
     return tasks as Task[]
   }
 
@@ -340,6 +355,8 @@ export default class Task {
     const insertResult = await taskCollection.insertOne(document)
     const task = await Task.findById(insertResult.insertedId) as Task
     realtime.emit (task.taskGroupId + '', 'task:create', task)
+    const messenger = await getMessenger()
+    messenger.publishExamineTask(insertResult.insertedId.toString(), 0)
     return task
   }
 
@@ -393,6 +410,8 @@ export default class Task {
     })
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
+    const messenger = await getMessenger()
+    messenger.publishExamineTask(id.toString(), 0)
     return task
   }
 
@@ -405,6 +424,8 @@ export default class Task {
     })
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
+    const messenger = await getMessenger()
+    messenger.publishExamineTask(id.toString(), 0)
     return task
   }
 
@@ -681,6 +702,13 @@ export default class Task {
           }
         }
       )
+      
+      const messenger = await getMessenger()
+      const tasks = await Task.findAllIncompleteInWorkgroup(task.workgroup)
+      for (const task of tasks) {
+        messenger.publishExamineTask(task._id!.toString(), 0)  
+      }
+
       realtime.emit (task.taskGroupId + '', 'workgroup:delay', {
         workgroup: task.workgroup,
         update: {
@@ -691,6 +719,12 @@ export default class Task {
 
     const resultTask = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', resultTask)
+
+    if (!resultTask.isComplete) {
+      const messenger = await getMessenger()
+      messenger.publishExamineTask(id.toString(), 0)
+    }
+
     return resultTask
   }
 
@@ -716,6 +750,8 @@ export default class Task {
       task.parentsComplete = true
       realtime.emit (task.taskGroupId + '', 'task:update', task)
     }
+    const messenger = await getMessenger()
+    messenger.publishExamineTask(task._id!.toString(), 0)
   }
 
   static async getParentsData(task: Task) : Promise<any> {
@@ -739,6 +775,8 @@ export default class Task {
     let updatedCount = 0
     // Find all tasks that may need parentsComplete sync'd
 
+    const messenger = await getMessenger()
+
     const tasks = await taskCollection.find({
       parentIds : { $exists: true, $not: {$size: 0} },
       isComplete: false,
@@ -759,6 +797,7 @@ export default class Task {
           { _id: task._id },
           { $set: { parentsComplete: true } }
         )
+        messenger.publishExamineTask(task._id!.toString(), 0)
         updatedCount++
       }
     }

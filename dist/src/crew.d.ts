@@ -13,12 +13,16 @@ import WorkerServerInterface from './WorkerServerInterface';
 import TaskError from './TaskError';
 import { Socket, Server } from 'socket.io';
 import http from 'http';
+import Messenger from './Messenger';
+import GoogleCloudTasksMessenger from './messengers/GoogleCloudTasksMessenger';
+import InlineMessenger from './messengers/InlineMessenger';
 interface CrewOptions {
     server: http.Server;
     io?: Server;
     authenticateSocket?: (socket: Socket, message: any) => boolean;
+    messenger?: Messenger;
 }
 declare function crew(options: CrewOptions): express.Router;
 export default crew;
-export { crew, TaskGroup, Task, Worker, HttpWorker, WorkerGroup, HttpWorkerGroup, TaskResponse, TaskChild, TaskError, WorkerServer, WorkerServerInterface };
+export { crew, TaskGroup, Task, Worker, HttpWorker, WorkerGroup, HttpWorkerGroup, TaskResponse, TaskChild, TaskError, WorkerServer, WorkerServerInterface, Messenger, GoogleCloudTasksMessenger, InlineMessenger };
 //# sourceMappingURL=crew.d.ts.map

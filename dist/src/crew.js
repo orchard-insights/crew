@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkerServer = exports.TaskError = exports.HttpWorkerGroup = exports.WorkerGroup = exports.HttpWorker = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
+exports.InlineMessenger = exports.GoogleCloudTasksMessenger = exports.WorkerServer = exports.TaskError = exports.HttpWorkerGroup = exports.WorkerGroup = exports.HttpWorker = exports.Worker = exports.Task = exports.TaskGroup = exports.crew = void 0;
 var express_1 = __importDefault(require("express"));
 var terminus_1 = __importDefault(require("@godaddy/terminus"));
 var mongodb_1 = require("mongodb");
@@ -68,6 +68,11 @@ var swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 var path_1 = __importDefault(require("path"));
 var realtime_1 = __importDefault(require("./realtime"));
 var Operator_1 = __importDefault(require("./Operator"));
+var GoogleCloudTasksMessenger_1 = __importDefault(require("./messengers/GoogleCloudTasksMessenger"));
+exports.GoogleCloudTasksMessenger = GoogleCloudTasksMessenger_1.default;
+var InlineMessenger_1 = __importDefault(require("./messengers/InlineMessenger"));
+exports.InlineMessenger = InlineMessenger_1.default;
+var Messenger_1 = require("./Messenger");
 function crew(options) {
     var _this = this;
     var _a;
@@ -91,6 +96,10 @@ function crew(options) {
         ]
     });
     router.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
+    // Set messenger
+    if (options.messenger) {
+        (0, Messenger_1.setMessenger)(options.messenger);
+    }
     // Create websocket server if one wasn't provided
     if (!options.io) {
         var io = new socket_io_1.Server(options.server, {

@@ -38,12 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var mongodb_memory_server_1 = require("mongodb-memory-server");
 var mongodb_1 = require("mongodb");
-var CloudTasks_1 = require("./CloudTasks");
 var crewDb = null;
 // Async init function is used to help mock mongodb for functional tests
 function initDb() {
     return __awaiter(this, void 0, void 0, function () {
-        var uri, mongod, client, db, collections, shouldCreateTaskGroupsCollection, shouldCreateTasksCollection, shouldCreateOperatorsCollection, _i, collections_1, collection, groupCollection, taskCollection, operatorCollection, tasksChangeStream, messenger, taskIndexes, _a, taskIndexes_1, index, idxExists;
+        var uri, mongod, client, db, collections, shouldCreateTaskGroupsCollection, shouldCreateTasksCollection, shouldCreateOperatorsCollection, _i, collections_1, collection, groupCollection, taskCollection, operatorCollection, taskIndexes, _a, taskIndexes_1, index, idxExists;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -119,20 +118,6 @@ function initDb() {
                     groupCollection = db.collection('task_group');
                     taskCollection = db.collection('task');
                     operatorCollection = db.collection('operator');
-                    tasksChangeStream = taskCollection.watch();
-                    return [4 /*yield*/, (0, CloudTasks_1.getMessenger)()];
-                case 14:
-                    messenger = _b.sent();
-                    tasksChangeStream.on('change', function (change) {
-                        if (change.documentKey) {
-                            if (change.operationType === 'update' || change.operationType === 'insert') {
-                                // console.log('~~ Task Change', change.operationType, (change.documentKey as any)._id)
-                                if (change.documentKey && change.documentKey._id) {
-                                    messenger.publishExamineTask(change.documentKey._id, 0);
-                                }
-                            }
-                        }
-                    });
                     taskIndexes = [{
                             name: 'idxChannel',
                             fields: { channel: 1 }
@@ -174,26 +159,26 @@ function initDb() {
                         }
                     ];
                     _a = 0, taskIndexes_1 = taskIndexes;
-                    _b.label = 15;
-                case 15:
-                    if (!(_a < taskIndexes_1.length)) return [3 /*break*/, 20];
+                    _b.label = 14;
+                case 14:
+                    if (!(_a < taskIndexes_1.length)) return [3 /*break*/, 19];
                     index = taskIndexes_1[_a];
                     return [4 /*yield*/, taskCollection.indexExists(index.name)];
-                case 16:
+                case 15:
                     idxExists = _b.sent();
-                    if (!!idxExists) return [3 /*break*/, 18];
+                    if (!!idxExists) return [3 /*break*/, 17];
                     console.log("~~ Creating Index : " + index.name);
                     return [4 /*yield*/, taskCollection.createIndex(index.fields, { name: index.name })];
-                case 17:
+                case 16:
                     _b.sent();
-                    return [3 /*break*/, 19];
-                case 18:
+                    return [3 /*break*/, 18];
+                case 17:
                     console.log("~~ Index Exists : " + index.name);
-                    _b.label = 19;
-                case 19:
+                    _b.label = 18;
+                case 18:
                     _a++;
-                    return [3 /*break*/, 15];
-                case 20:
+                    return [3 /*break*/, 14];
+                case 19:
                     crewDb = {
                         client: client,
                         db: db,

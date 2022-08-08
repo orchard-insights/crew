@@ -178,7 +178,7 @@ Crew provides two execution models for workers : Polling, and Http
 
 The default model is polling where workers must use the /acquire and /release API endpoint to request and complete tasks. When using this model you can use the built-in Worker class to implement your workers.
 
-Crew version 1.0.12 added the ability for workers to be invoked via http calls.  This allows workers to be hosted as web apps or cloud functions.  When using this model you can use the built-in HttpWorker class to implement your workers.  Note that using HttpWorkers require additional configuration - see the "Google Cloud Tasks Config" section below.
+Crew version 1.0.12 added the ability for workers to be invoked via http calls.  This allows workers to be hosted as web apps or cloud functions.  When using this model you can use the built-in HttpWorker class to implement your workers.  Note that using HttpWorkers in production requires additional configuration of a messenger to invoke callbacks in a durable manner - see the "Messengers Config" section below.
 
 Crew delivers tasks to http workers via POST requests (JSON) that contain the following parameters:
 - input : The input for the task
@@ -299,7 +299,7 @@ yarn cli start
 yarn cli work
 ```
 
-When using operator based workers you will need to allow Google Cloud Tasks to be able to call your api:
+When using Google Cloud Tasks with HttpWorkers you will need to expose your locally running crew api to the web with something like ngrok:
 ```
 ngrok http 3000
 ```
@@ -316,9 +316,23 @@ CREW_API_PUBLIC_BASE_URL=https://08d0-172-221-82-130.ngrok.io/
 yarn test
 ```
 
-#### 5. Google Cloud Tasks Config (optional)
+#### 5. Messenger Config
 
-In order to use HttpWorkers you will need to provide access to a [Google Cloud Tasks](https://cloud.google.com/tasks) project.
+Internally, crew uses a workflow of cascading events called examine and execute to determine when to send requests to HTTP workers.  In order to support delayed tasks as well as workflow durability, crew needs an external tool to trigger examine and exeucte events.  Currently crew only provides a messenger based on Google Cloud Tasks.  You can easily implement your own messenger by implementing the [Messenger interface](./src/Messenger.ts).
+
+The messenger to use is specified in the crew configuration options:
+
+```
+app.use('/crew', crew({
+  server,
+  io: new Server(server),
+  messenger: new GoogleCloudTasksMessenger()
+}))
+```
+
+**Google Cloud Tasks Messenger**
+
+In order to use HttpWorkers in production you can provide access to a [Google Cloud Tasks](https://cloud.google.com/tasks) project.
 
 Begin by enabling the Cloud Tasks API, and then setup two Queues with these names:
 

@@ -23,11 +23,16 @@ import swaggerJSDoc from 'swagger-jsdoc'
 import path from 'path'
 import emitter from './realtime'
 import Operator from './Operator'
+import Messenger from './Messenger'
+import GoogleCloudTasksMessenger from './messengers/GoogleCloudTasksMessenger'
+import InlineMessenger from './messengers/InlineMessenger'
+import { setMessenger } from './Messenger'
 
 interface CrewOptions {
   server: http.Server,
   io?: Server,
-  authenticateSocket?: (socket: Socket, message: any) => boolean
+  authenticateSocket?: (socket: Socket, message: any) => boolean,
+  messenger?: Messenger
 }
 
 function crew (options: CrewOptions) : express.Router {
@@ -52,6 +57,11 @@ function crew (options: CrewOptions) : express.Router {
     ]
   })
   router.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+  // Set messenger
+  if (options.messenger) {
+    setMessenger(options.messenger)
+  }
 
   // Create websocket server if one wasn't provided
   if (!options.io) {
@@ -1312,5 +1322,8 @@ export {
   TaskChild,
   TaskError,
   WorkerServer,
-  WorkerServerInterface
+  WorkerServerInterface,
+  Messenger,
+  GoogleCloudTasksMessenger,
+  InlineMessenger
 }

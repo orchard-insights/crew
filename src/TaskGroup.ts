@@ -3,6 +3,8 @@ import { DateTime } from 'luxon'
 import realtime from './realtime'
 import initDb from './database'
 import _ from 'lodash'
+import Task from './Task'
+import { getMessenger } from './Messenger'
 
 /**
  * @openapi
@@ -107,6 +109,13 @@ export default class TaskGroup {
         remainingAttempts: remainingAttempts
       }
     })
+
+    const messenger = await getMessenger()
+    const tasks = await Task.findAllInGroup(id)
+    for (const task of tasks) {
+      messenger.publishExamineTask(task._id!.toString(), 0)  
+    }
+
     realtime.emit (id + '', 'group:retry', null)
     return group
   }
@@ -136,6 +145,12 @@ export default class TaskGroup {
       }
     })
 
+    const messenger = await getMessenger()
+    const tasks = await Task.findAllInGroup(id)
+    for (const task of tasks) {
+      messenger.publishExamineTask(task._id!.toString(), 0)  
+    }
+
     realtime.emit (id + '', 'group:reset', null)
     return group
   }
@@ -154,6 +169,12 @@ export default class TaskGroup {
     // Pause task group
     await groupCollection.updateOne({ _id: id }, { $set: { isPaused }})
     group.isPaused = isPaused
+
+    const messenger = await getMessenger()
+    const tasks = await Task.findAllInGroup(id)
+    for (const task of tasks) {
+      messenger.publishExamineTask(task._id!.toString(), 0)  
+    }
 
     realtime.emit (id + '', 'group:syncPause', { isPaused })
     return group

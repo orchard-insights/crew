@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb'
 import CrewDatabase from './CrewDatabase'
-import { getMessenger } from './CloudTasks'
+import { getMessenger } from './Messenger'
 
 let crewDb: CrewDatabase | null = null
 
@@ -64,18 +64,19 @@ export default async function initDb () : Promise<CrewDatabase> {
   const taskCollection = db.collection('task')
   const operatorCollection = db.collection('operator')
 
-  const tasksChangeStream = taskCollection.watch()
-  const messenger = await getMessenger()
-  tasksChangeStream.on('change', (change) => {
-    if (change.documentKey) {
-      if (change.operationType === 'update' || change.operationType === 'insert') {
-        // console.log('~~ Task Change', change.operationType, (change.documentKey as any)._id)
-        if (change.documentKey && (change.documentKey as any)._id) {
-          messenger.publishExamineTask((change.documentKey as any)._id, 0)
-        }
-      }
-    }
-  })
+  // // Removing this to prevent cli issues as well as duplicated examines in clustered environments
+  // const tasksChangeStream = taskCollection.watch()
+  // const messenger = await getMessenger()
+  // tasksChangeStream.on('change', (change) => {
+  //   if (change.documentKey) {
+  //     if (change.operationType === 'update' || change.operationType === 'insert') {
+  //       // console.log('~~ Task Change', change.operationType, (change.documentKey as any)._id)
+  //       if (change.documentKey && (change.documentKey as any)._id) {
+  //         messenger.publishExamineTask((change.documentKey as any)._id, 0)
+  //       }
+  //     }
+  //   }
+  // })
 
   // Ensure indexes exist
   const taskIndexes = [{

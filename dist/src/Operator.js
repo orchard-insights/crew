@@ -56,7 +56,7 @@ var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
 var Task_1 = __importDefault(require("./Task"));
 var axios_1 = __importDefault(require("axios"));
-var CloudTasks_1 = require("./CloudTasks");
+var Messenger_1 = require("./Messenger");
 /**
  * @openapi
  * components:
@@ -267,7 +267,7 @@ var Operator = /** @class */ (function () {
                         return [4 /*yield*/, Task_1.default.findAllInChannel(limit, skip, operator.channel)];
                     case 2:
                         tasks = _a.sent();
-                        return [4 /*yield*/, (0, CloudTasks_1.getMessenger)()];
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
                     case 3:
                         messenger = _a.sent();
                         for (_i = 0, tasks_1 = tasks; _i < tasks_1.length; _i++) {

@@ -194,6 +194,7 @@ export default class Task {
     static updateById(id: ObjectId, updates: any): Promise<Task>;
     static findAllInGroup(taskGroupId: ObjectId, limit?: number, skip?: number): Promise<Task[]>;
     static findAllInChannel(limit: number | undefined, skip: number | undefined, channel: string): Promise<Task[]>;
+    static findAllIncompleteInWorkgroup(workgroup: string, limit?: number, skip?: number): Promise<Task[]>;
     static getChannels(): Promise<any[]>;
     static fromData(taskGroupId: ObjectId, data: any): Promise<Task>;
     static findChildren(id: ObjectId): Promise<Task[]>;
