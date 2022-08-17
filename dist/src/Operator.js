@@ -223,34 +223,6 @@ var Operator = /** @class */ (function () {
             });
         });
     };
-    Operator.bootstrapAll = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var operatorCollection, operators, _i, operators_1, operator;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, database_1.default)()];
-                    case 1:
-                        operatorCollection = (_a.sent()).operatorCollection;
-                        return [4 /*yield*/, operatorCollection.find().sort({ createdAt: -1 }).toArray()];
-                    case 2:
-                        operators = _a.sent();
-                        _i = 0, operators_1 = operators;
-                        _a.label = 3;
-                    case 3:
-                        if (!(_i < operators_1.length)) return [3 /*break*/, 6];
-                        operator = operators_1[_i];
-                        return [4 /*yield*/, Operator.bootstrap(operator)];
-                    case 4:
-                        _a.sent();
-                        _a.label = 5;
-                    case 5:
-                        _i++;
-                        return [3 /*break*/, 3];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
     Operator.bootstrap = function (operator) {
         return __awaiter(this, void 0, void 0, function () {
             var limit, skip, hasMore, tasks, messenger, _i, tasks_1, task;

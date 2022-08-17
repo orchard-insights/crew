@@ -366,6 +366,29 @@ var Task = /** @class */ (function () {
             });
         });
     };
+    // limit less than 0 means return all
+    Task.findAllIncomplete = function (limit, skip) {
+        if (limit === void 0) { limit = -1; }
+        if (skip === void 0) { skip = 0; }
+        return __awaiter(this, void 0, void 0, function () {
+            var taskCollection, q, tasks;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, database_1.default)()];
+                    case 1:
+                        taskCollection = (_a.sent()).taskCollection;
+                        q = taskCollection.find({ isComplete: false });
+                        if (limit > 0) {
+                            q.limit(limit);
+                        }
+                        return [4 /*yield*/, q.skip(skip).sort({ createdAt: -1 }).toArray()];
+                    case 2:
+                        tasks = _a.sent();
+                        return [2 /*return*/, tasks];
+                }
+            });
+        });
+    };
     Task.getChannels = function () {
         return __awaiter(this, void 0, void 0, function () {
             var taskCollection, channels, channelStats, _i, channels_1, channel, totalCount, completedCount, assignedCount;
@@ -1244,6 +1267,40 @@ var Task = /** @class */ (function () {
                         _a.sent();
                         _a.label = 9;
                     case 9: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Task.bootstrap = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var limit, skip, hasMore, tasks, messenger, _i, tasks_3, task;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        limit = 100;
+                        skip = 0;
+                        hasMore = true;
+                        _a.label = 1;
+                    case 1:
+                        if (!hasMore) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Task.findAllIncomplete(limit, skip)];
+                    case 2:
+                        tasks = _a.sent();
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                    case 3:
+                        messenger = _a.sent();
+                        for (_i = 0, tasks_3 = tasks; _i < tasks_3.length; _i++) {
+                            task = tasks_3[_i];
+                            if (task._id) {
+                                messenger.publishExamineTask(task._id.toString(), 0);
+                            }
+                        }
+                        skip = skip + limit;
+                        if (tasks.length < limit) {
+                            hasMore = false;
+                        }
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/];
                 }
             });
         });

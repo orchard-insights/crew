@@ -114,17 +114,6 @@ export default class Operator {
     return deleteResult
   }
 
-  static async bootstrapAll() {
-    // Since operators depend on events which may have gotten lost,
-    // periodically trigger a set of events for each operator in order
-    // to re-start the event flow.
-    const { operatorCollection } = await initDb()
-    const operators = await operatorCollection.find().sort( { createdAt: -1 } ).toArray() as Operator[]
-    for (const operator of operators) {
-      await Operator.bootstrap(operator)
-    }
-  }
-
   static async bootstrap(operator: Operator) : Promise<void> {
     // If an operator is unpaused, bootstrap tasks
     if (!operator.isPaused) {

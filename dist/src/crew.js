@@ -194,9 +194,9 @@ function crew(options) {
             databaseConnected = false;
             console.log('Database connection closed!');
         });
-        // Bootstrap operators (also done in cron below)
-        Operator_1.default.bootstrapAll().then(function () {
-            console.log("~~ bootstraped operators");
+        // Bootstrap tasks (also done in cron below)
+        Task_1.default.bootstrap().then(function () {
+            console.log("~~ bootstraped tasks");
         });
         // Home
         router.get('/', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
@@ -1480,26 +1480,102 @@ function crew(options) {
                 }
             });
         }); }));
-    });
-    var bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
-        Operator_1.default.bootstrapAll().then(function () {
-            console.log("~~ bootstraped operators");
-        });
-    });
-    var cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {
-        if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-            TaskGroup_1.default.cleanExpired().then(function (result) {
-                if (result.length > 0) {
-                    console.log("~~ removed " + result.length + " expired task groups");
+        /**
+         * @openapi
+         * /api/v1/clean:
+         *   post:
+         *     description: Run a clean cycle - removes old task groups.
+         *     tags:
+         *       - admin
+         *     responses:
+         *       200:
+         *         description: Admin task succeeded
+         */
+        router.post('/api/v1/clean', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes')) return [3 /*break*/, 2];
+                        return [4 /*yield*/, TaskGroup_1.default.cleanExpired()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        res.send({ success: true });
+                        return [2 /*return*/];
                 }
             });
-        }
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/bootstrap:
+         *   post:
+         *     description: Run a bootstrap cycle - finds and restarts stalled tasks.
+         *     tags:
+         *       - admin
+         *     responses:
+         *       200:
+         *         description: Admin task succeeded
+         */
+        router.post('/api/v1/bootstrap', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Task_1.default.bootstrap()];
+                    case 1:
+                        _a.sent();
+                        res.send({ success: true });
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
+        /**
+         * @openapi
+         * /api/v1/sync:
+         *   post:
+         *     description: Forces a sync of all tasks parentsComplete property.
+         *     tags:
+         *       - admin
+         *     responses:
+         *       200:
+         *         description: Admin task succeeded
+         */
+        router.post('/api/v1/sync', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Task_1.default.syncParents()];
+                    case 1:
+                        _a.sent();
+                        res.send({ success: true });
+                        return [2 /*return*/];
+                }
+            });
+        }); }));
     });
-    var syncParentsCompleteCron = node_cron_1.default.schedule('*/5 * * * *', function () {
-        Task_1.default.syncParents().then(function (count) {
-            console.log("~~ syncd " + count + " task's parentsComplete");
+    var bootstrapOperatorsCron = null;
+    var cleanExpiredGroupsCron = null;
+    var syncParentsCompleteCron = null;
+    // Allow cron to be disabled so tasks can be run by external scheduler if desired
+    if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
+        bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
+            Task_1.default.bootstrap().then(function () {
+                console.log("~~ bootstraped tasks");
+            });
         });
-    });
+        cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {
+            if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
+                TaskGroup_1.default.cleanExpired().then(function (result) {
+                    if (result.length > 0) {
+                        console.log("~~ removed " + result.length + " expired task groups");
+                    }
+                });
+            }
+        });
+        syncParentsCompleteCron = node_cron_1.default.schedule('*/5 * * * *', function () {
+            Task_1.default.syncParents().then(function (count) {
+                console.log("~~ syncd " + count + " task's parentsComplete");
+            });
+        });
+    }
     // Graceful shutdown for use within render.com or kubernetes - can be disabled with an env var
     if (process.env.CREW_GRACEFUL_SHUTDOWN !== 'no') {
         console.log('~~ Enabling graceful shutdown');
@@ -1513,9 +1589,15 @@ function crew(options) {
                         case 0:
                             // Cleanup all resources
                             console.log('~~ Terminus signal : cleaning up...');
-                            cleanExpiredGroupsCron.stop();
-                            syncParentsCompleteCron.stop();
-                            bootstrapOperatorsCron.stop();
+                            if (cleanExpiredGroupsCron != null) {
+                                cleanExpiredGroupsCron.stop();
+                            }
+                            if (syncParentsCompleteCron != null) {
+                                syncParentsCompleteCron.stop();
+                            }
+                            if (bootstrapOperatorsCron != null) {
+                                bootstrapOperatorsCron.stop();
+                            }
                             // Close database connection
                             console.log('~~ Closing database connection');
                             if (!client) return [3 /*break*/, 2];

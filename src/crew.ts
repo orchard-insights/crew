@@ -144,9 +144,9 @@ function crew (options: CrewOptions) : express.Router {
       console.log('Database connection closed!')
     })
 
-    // Bootstrap operators (also done in cron below)
-    Operator.bootstrapAll().then(() => {
-      console.log(`~~ bootstraped operators`)
+    // Bootstrap tasks (also done in cron below)
+    Task.bootstrap().then(() => {
+      console.log(`~~ bootstraped tasks`)
     })
 
     // Home
@@ -1255,29 +1255,92 @@ function crew (options: CrewOptions) : express.Router {
         res.json(deleteResult)
       }
     ))
-  })
 
-  const bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
-    Operator.bootstrapAll().then(() => {
-      console.log(`~~ bootstraped operators`)
-    })
-  })
-
-  const cleanExpiredGroupsCron = cron.schedule('30 3 * * *', () => {
-    if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-      TaskGroup.cleanExpired().then((result) => {
-        if (result.length > 0) {
-          console.log(`~~ removed ${result.length} expired task groups`)
+    /**
+     * @openapi
+     * /api/v1/clean:
+     *   post:
+     *     description: Run a clean cycle - removes old task groups.
+     *     tags:
+     *       - admin
+     *     responses:
+     *       200:
+     *         description: Admin task succeeded
+     */
+     router.post('/api/v1/clean', unhandledExceptionsHandler(
+      async (req, res) => {
+        if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
+          await TaskGroup.cleanExpired()
         }
-      })
-    }
+        res.send({success: true})
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/bootstrap:
+     *   post:
+     *     description: Run a bootstrap cycle - finds and restarts stalled tasks.
+     *     tags:
+     *       - admin
+     *     responses:
+     *       200:
+     *         description: Admin task succeeded
+     */
+     router.post('/api/v1/bootstrap', unhandledExceptionsHandler(
+      async (req, res) => {
+        await Task.bootstrap()
+        res.send({success: true})
+      }
+    ))
+
+    /**
+     * @openapi
+     * /api/v1/sync:
+     *   post:
+     *     description: Forces a sync of all tasks parentsComplete property.
+     *     tags:
+     *       - admin
+     *     responses:
+     *       200:
+     *         description: Admin task succeeded
+     */
+     router.post('/api/v1/sync', unhandledExceptionsHandler(
+      async (req, res) => {
+        await Task.syncParents()
+        res.send({success: true})
+      }
+    ))
   })
 
-  const syncParentsCompleteCron = cron.schedule('*/5 * * * *', () => {
-    Task.syncParents().then((count) => {
-      console.log(`~~ syncd ${count} task's parentsComplete`)
+  let bootstrapOperatorsCron : cron.ScheduledTask | null = null
+  let cleanExpiredGroupsCron : cron.ScheduledTask | null = null
+  let syncParentsCompleteCron : cron.ScheduledTask | null = null
+
+  // Allow cron to be disabled so tasks can be run by external scheduler if desired
+  if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
+    bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
+      Task.bootstrap().then(() => {
+        console.log(`~~ bootstraped tasks`)
+      })
     })
-  })
+
+    cleanExpiredGroupsCron = cron.schedule('30 3 * * *', () => {
+      if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
+        TaskGroup.cleanExpired().then((result) => {
+          if (result.length > 0) {
+            console.log(`~~ removed ${result.length} expired task groups`)
+          }
+        })
+      }
+    })
+
+    syncParentsCompleteCron = cron.schedule('*/5 * * * *', () => {
+      Task.syncParents().then((count) => {
+        console.log(`~~ syncd ${count} task's parentsComplete`)
+      })
+    })
+  }
 
   // Graceful shutdown for use within render.com or kubernetes - can be disabled with an env var
   if (process.env.CREW_GRACEFUL_SHUTDOWN !== 'no') {
@@ -1289,9 +1352,15 @@ function crew (options: CrewOptions) : express.Router {
       onSignal: async (): Promise<void> => {
         // Cleanup all resources
         console.log('~~ Terminus signal : cleaning up...')
-        cleanExpiredGroupsCron.stop()
-        syncParentsCompleteCron.stop()
-        bootstrapOperatorsCron.stop()
+        if (cleanExpiredGroupsCron != null) {
+          cleanExpiredGroupsCron.stop()
+        }
+        if (syncParentsCompleteCron != null) {
+          syncParentsCompleteCron.stop()
+        }
+        if (bootstrapOperatorsCron != null) {
+          bootstrapOperatorsCron.stop()
+        }
 
         // Close database connection
         console.log('~~ Closing database connection')

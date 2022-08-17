@@ -44,7 +44,6 @@ export default class Operator {
     static updateById(id: ObjectId, updates: any): Promise<Operator>;
     static fromData(data: any): Promise<Operator>;
     static deleteById(id: ObjectId): Promise<any>;
-    static bootstrapAll(): Promise<void>;
     static bootstrap(operator: Operator): Promise<void>;
     static execute(taskId: ObjectId): Promise<void>;
 }

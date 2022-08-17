@@ -284,6 +284,17 @@ export default class Task {
     return tasks as Task[]
   }
 
+  // limit less than 0 means return all
+  static async findAllIncomplete(limit = -1, skip = 0) : Promise<Task[]> {
+    const { taskCollection } = await initDb()
+    const q = taskCollection.find({ isComplete: false })
+    if (limit > 0) {
+      q.limit(limit)
+    }
+    const tasks = await q.skip(skip).sort( { createdAt: -1 } ).toArray()
+    return tasks as Task[]
+  }
+
   static async getChannels() {
     const { taskCollection } = await initDb()
     const channels = await taskCollection.distinct('channel')
@@ -920,6 +931,27 @@ export default class Task {
       }
     } else if (examineDelay) {
       await messenger.publishExamineTask(id.toString(), examineDelay)
+    }
+  }
+
+  static async bootstrap() : Promise<void> {
+    // Find all incomplete tasks and fire an examine for them
+
+    const limit = 100
+    let skip = 0
+    let hasMore = true
+    while (hasMore) {
+      const tasks = await Task.findAllIncomplete(limit, skip)
+      const messenger = await getMessenger()
+      for (const task of tasks) {
+        if (task._id) {
+          messenger.publishExamineTask(task._id.toString(), 0)
+        }
+      }
+      skip = skip + limit
+      if (tasks.length < limit) {
+        hasMore = false
+      }
     }
   }
 }

@@ -195,6 +195,7 @@ export default class Task {
     static findAllInGroup(taskGroupId: ObjectId, limit?: number, skip?: number): Promise<Task[]>;
     static findAllInChannel(limit: number | undefined, skip: number | undefined, channel: string): Promise<Task[]>;
     static findAllIncompleteInWorkgroup(workgroup: string, limit?: number, skip?: number): Promise<Task[]>;
+    static findAllIncomplete(limit?: number, skip?: number): Promise<Task[]>;
     static getChannels(): Promise<any[]>;
     static fromData(taskGroupId: ObjectId, data: any): Promise<Task>;
     static findChildren(id: ObjectId): Promise<Task[]>;
@@ -210,5 +211,6 @@ export default class Task {
     static syncParents(): Promise<number>;
     static operatorAcquire(id: ObjectId, workerId: string): Promise<Task | null>;
     static examine(id: ObjectId): Promise<any>;
+    static bootstrap(): Promise<void>;
 }
 //# sourceMappingURL=Task.d.ts.map
