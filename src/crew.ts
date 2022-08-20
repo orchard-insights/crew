@@ -1321,7 +1321,7 @@ function crew (options: CrewOptions) : express.Router {
   let syncParentsCompleteCron : cron.ScheduledTask | null = null
 
   // Allow cron to be disabled so tasks can be run by external scheduler if desired
-  if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
+  if (process.env.CREW_USE_EXTERNAL_CRON !== 'yes') {
     bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
       Task.bootstrap().then(() => {
         console.log(`~~ bootstrapped tasks`)

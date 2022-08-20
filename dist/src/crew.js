@@ -1558,7 +1558,7 @@ function crew(options) {
     var cleanExpiredGroupsCron = null;
     var syncParentsCompleteCron = null;
     // Allow cron to be disabled so tasks can be run by external scheduler if desired
-    if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
+    if (process.env.CREW_USE_EXTERNAL_CRON !== 'yes') {
         bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
             Task_1.default.bootstrap().then(function () {
                 console.log("~~ bootstrapped tasks");
