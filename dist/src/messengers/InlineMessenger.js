@@ -51,7 +51,7 @@ var InlineMessenger = /** @class */ (function () {
                 setTimeout(function () {
                     Task_1.default.examine(new mongodb_1.ObjectId(taskId));
                 }, delayInSeconds * 1000);
-                return [2 /*return*/];
+                return [2 /*return*/, null];
             });
         });
     };
@@ -59,7 +59,21 @@ var InlineMessenger = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 Operator_1.default.execute(new mongodb_1.ObjectId(taskId));
-                return [2 /*return*/];
+                return [2 /*return*/, null];
+            });
+        });
+    };
+    InlineMessenger.prototype.isExaminePending = function (messageId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, false];
+            });
+        });
+    };
+    InlineMessenger.prototype.isExecutePending = function (messageId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, false];
             });
         });
     };

@@ -198,6 +198,9 @@ function crew(options) {
         Task_1.default.bootstrap().then(function () {
             console.log("~~ bootstraped tasks");
         });
+        Task_1.default.syncParents().then(function () {
+            console.log("~~ ran syncParents");
+        });
         // Home
         router.get('/', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -1491,7 +1494,7 @@ function crew(options) {
          *       200:
          *         description: Admin task succeeded
          */
-        router.post('/api/v1/clean', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+        router.all('/api/v1/clean', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1517,7 +1520,7 @@ function crew(options) {
          *       200:
          *         description: Admin task succeeded
          */
-        router.post('/api/v1/bootstrap', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+        router.all('/api/v1/bootstrap', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, Task_1.default.bootstrap()];
@@ -1539,7 +1542,7 @@ function crew(options) {
          *       200:
          *         description: Admin task succeeded
          */
-        router.post('/api/v1/sync', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+        router.all('/api/v1/sync', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, Task_1.default.syncParents()];
@@ -1558,7 +1561,7 @@ function crew(options) {
     if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
         bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
             Task_1.default.bootstrap().then(function () {
-                console.log("~~ bootstraped tasks");
+                console.log("~~ bootstrapped tasks");
             });
         });
         cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {

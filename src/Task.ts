@@ -173,6 +173,9 @@ import { getMessenger } from './Messenger'
  *             assignedAt:
  *               type: string
  *               description: The timestamp when the task was acquired.
+ *             executeMessageId:
+ *               type: string
+ *               description: When a task is executed via a webhook, the id of the message that will trigger the http request goes here.
  */
 export default class Task {
   _id?: ObjectId
@@ -197,6 +200,8 @@ export default class Task {
   parentIds: ObjectId[]
   assignedTo: string | null
   assignedAt: Date | null
+  executeMessageId: string | null
+  examineMessageId: string | null
 
   constructor(taskGroupId: ObjectId, name: string, channel: string, input: object | null = null, parentIds : ObjectId[] = [], isPaused = false, workgroup : string | null = null, key : string | null = null, remainingAttempts = 5, priority = 0, progressWeight = 1, isSeed = false) {
     this.taskGroupId = taskGroupId
@@ -220,6 +225,8 @@ export default class Task {
     this.parentIds = parentIds
     this.assignedTo = null
     this.assignedAt = null
+    this.executeMessageId = null
+    this.examineMessageId = null
   }
 
   static async findById(id: ObjectId) : Promise<Task> {
@@ -237,6 +244,8 @@ export default class Task {
     delete updates.isComplete
     delete updates.assignedTo
     delete updates.assignedAt
+    delete updates.executeMessageId
+    delete updates.examineMessageId
     delete updates.output
     delete updates.errors
     delete updates.createdAt
@@ -250,8 +259,7 @@ export default class Task {
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
     if (!task.isComplete) {
-      const messenger = await getMessenger()
-      messenger.publishExamineTask(id.toString(), 0)
+      await Task.triggerExamine(task, 0)
     }
     return task
   }
@@ -287,7 +295,17 @@ export default class Task {
   // limit less than 0 means return all
   static async findAllIncomplete(limit = -1, skip = 0) : Promise<Task[]> {
     const { taskCollection } = await initDb()
-    const q = taskCollection.find({ isComplete: false })
+    const now = DateTime.utc().toJSDate()
+    const q = taskCollection.find({
+      isComplete: false,
+      isPaused: false,
+      parentsComplete: true,
+      remainingAttempts: { $gt: 0 },
+      $or: [
+        { runAfter: { $lt: now } },
+        { runAfter: null }
+      ]
+    })
     if (limit > 0) {
       q.limit(limit)
     }
@@ -314,7 +332,7 @@ export default class Task {
   }
 
   // Helper to create a task from a POST request
-  static async fromData(taskGroupId : ObjectId, data: any) : Promise<Task> {
+  static async fromData(taskGroupId : ObjectId, data: any, skipExamine = false) : Promise<Task> {
     const { taskCollection } = await initDb()
     const group = await TaskGroup.findById(taskGroupId)
 
@@ -339,7 +357,9 @@ export default class Task {
       createdAt: DateTime.utc().toJSDate(),
       parentIds: [],
       assignedTo: null,
-      assignedAt: null
+      assignedAt: null,
+      executeMessageId: null,
+      examineMessageId: null
     }
 
     if (data.parentIds) {
@@ -366,8 +386,9 @@ export default class Task {
     const insertResult = await taskCollection.insertOne(document)
     const task = await Task.findById(insertResult.insertedId) as Task
     realtime.emit (task.taskGroupId + '', 'task:create', task)
-    const messenger = await getMessenger()
-    messenger.publishExamineTask(insertResult.insertedId.toString(), 0)
+    if (!skipExamine) {
+      await Task.triggerExamine(task, 0)
+    }
     return task
   }
 
@@ -421,8 +442,7 @@ export default class Task {
     })
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
-    const messenger = await getMessenger()
-    messenger.publishExamineTask(id.toString(), 0)
+    await Task.triggerExamine(task, 0)
     return task
   }
 
@@ -435,8 +455,7 @@ export default class Task {
     })
     const task = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', task)
-    const messenger = await getMessenger()
-    messenger.publishExamineTask(id.toString(), 0)
+    await Task.triggerExamine(task, 0)
     return task
   }
 
@@ -457,7 +476,7 @@ export default class Task {
     // Clone task into group
     const newTaskData = _.omit(originalTask, 
       [
-        'taskGroupId', 'createdAt', 'errors', 'output', 'remainingAttempts', 'isPaused', 'parentsComplete', 'isComplete', 'runAfter', 'parentIds', 'assignedTo', 'assignedAt'
+        'taskGroupId', 'createdAt', 'errors', 'output', 'remainingAttempts', 'isPaused', 'parentsComplete', 'isComplete', 'runAfter', 'parentIds', 'assignedTo', 'assignedAt', 'executeMessageId', 'examineMessageId'
       ]
     )
     const task = await Task.fromData(group._id, newTaskData)
@@ -529,12 +548,15 @@ export default class Task {
       return task
     }
     if (task.assignedTo != workerId) {
+      Task.triggerExamine(task, 0)
       throw new Error('Worker id did not match!')
     }
     if (error) {
       const update: any = {
         assignedTo: null,
         assignedAt: null,
+        executeMessageId: null,
+        examineMessageId: null
       }
       const runAfter = DateTime.utc().plus({ seconds: task.errorDelayInSeconds }).toJSDate()
       if (task.errorDelayInSeconds) {
@@ -565,6 +587,8 @@ export default class Task {
           update: {
             assignedTo: null,
             assignedAt: null,
+            executeMessageId: null,
+            examineMessageId: null,
             error: error,
             isComplete: false,
             runAfter,
@@ -573,6 +597,9 @@ export default class Task {
         })
       }
 
+      if (task.remainingAttempts >= 1) {
+        await Task.triggerExamine(task, task.errorDelayInSeconds)
+      }
     } else {
       
       // TODO - use a transaction here?
@@ -623,7 +650,9 @@ export default class Task {
               delete createData._child_id
               delete createData._parent_ids
               
-              const childTask = await Task.fromData(task.taskGroupId, createData)
+              // Last param true => do not trigger an examine for creating the task
+              // examines will be triggered for child tasks in the syncParentsComplete below
+              const childTask = await Task.fromData(task.taskGroupId, createData, true)
 
               child.taskGroupId = task.taskGroupId
               child._id = childTask._id
@@ -650,6 +679,8 @@ export default class Task {
             $set : {
               assignedTo: null,
               assignedAt: null,
+              executeMessageId: null,
+              examineMessageId: null,
               output: output,
               isComplete: true,
               remainingAttempts: 0,
@@ -714,10 +745,9 @@ export default class Task {
         }
       )
       
-      const messenger = await getMessenger()
       const tasks = await Task.findAllIncompleteInWorkgroup(task.workgroup)
       for (const task of tasks) {
-        messenger.publishExamineTask(task._id!.toString(), 0)  
+        await Task.triggerExamine(task, workgroupDelayInSeconds)
       }
 
       realtime.emit (task.taskGroupId + '', 'workgroup:delay', {
@@ -730,11 +760,6 @@ export default class Task {
 
     const resultTask = await Task.findById(id)
     realtime.emit (task.taskGroupId + '', 'task:update', resultTask)
-
-    if (!resultTask.isComplete) {
-      const messenger = await getMessenger()
-      messenger.publishExamineTask(id.toString(), 0)
-    }
 
     return resultTask
   }
@@ -752,6 +777,7 @@ export default class Task {
       }
     }
     if (completedParentsCount === task.parentIds.length) {
+      const originalParentsComplete = task.parentsComplete
       await taskCollection.updateOne(
         { _id: task._id },
         { $set: {
@@ -760,9 +786,10 @@ export default class Task {
       )
       task.parentsComplete = true
       realtime.emit (task.taskGroupId + '', 'task:update', task)
+      if (!originalParentsComplete) {
+        await Task.triggerExamine(task, 0)
+      }
     }
-    const messenger = await getMessenger()
-    messenger.publishExamineTask(task._id!.toString(), 0)
   }
 
   static async getParentsData(task: Task) : Promise<any> {
@@ -786,8 +813,6 @@ export default class Task {
     let updatedCount = 0
     // Find all tasks that may need parentsComplete sync'd
 
-    const messenger = await getMessenger()
-
     const tasks = await taskCollection.find({
       parentIds : { $exists: true, $not: {$size: 0} },
       isComplete: false,
@@ -808,7 +833,7 @@ export default class Task {
           { _id: task._id },
           { $set: { parentsComplete: true } }
         )
-        messenger.publishExamineTask(task._id!.toString(), 0)
+        await Task.triggerExamine(task, 0)
         updatedCount++
       }
     }
@@ -901,7 +926,7 @@ export default class Task {
     const { operatorCollection } = await initDb()
     const task = await Task.findById(id)
     const messenger = await getMessenger()
-    
+
     // If task is
     // not complete,
     // not assigned,
@@ -925,12 +950,28 @@ export default class Task {
     // console.log('~~ examine', !task.isPaused, !task.isComplete, (task.parentsComplete || task.parentIds.length === 0), task.remainingAttempts > 0, runAfterHasPassed)
 
     if (!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed) {
-      const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
-      if (operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) {
-        await messenger.publishExecuteTask(id.toString())
+      // If the task has an executeMessageId, check if message is still pending
+      const messagePending = await messenger.isExecutePending(task.executeMessageId)
+      console.log("~~ dbg executeMessagePending", messagePending, task.executeMessageId)
+      if (!messagePending) {
+        // Only re-create a new execute task if there isn't a pending execute message for the task
+        const operator = await operatorCollection.findOne({channel: task.channel}) as Operator
+        if (operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL) {
+          // Store the message id in the task so we can check on it later
+          const executeMessageId = await messenger.publishExecuteTask(id.toString())
+          const { taskCollection } = await initDb()
+          await taskCollection.updateOne(
+            { _id: id },
+            {
+              $set : {
+                executeMessageId
+              }
+            }
+          )
+        }
       }
     } else if (examineDelay) {
-      await messenger.publishExamineTask(id.toString(), examineDelay)
+      await Task.triggerExamine(task, examineDelay)
     }
   }
 
@@ -942,15 +983,34 @@ export default class Task {
     let hasMore = true
     while (hasMore) {
       const tasks = await Task.findAllIncomplete(limit, skip)
-      const messenger = await getMessenger()
       for (const task of tasks) {
         if (task._id) {
-          messenger.publishExamineTask(task._id.toString(), 0)
+          await Task.triggerExamine(task, 0)
         }
       }
       skip = skip + limit
       if (tasks.length < limit) {
         hasMore = false
+      }
+    }
+  }
+
+  static async triggerExamine(task: Task, delayInSeconds: number) {
+    if (task._id) {
+      const messenger = await getMessenger()
+      const messagePending = await messenger.isExaminePending(task.executeMessageId)
+      console.log("~~ dbg examineMessagePending", messagePending, task.executeMessageId)
+      if (!messagePending) {
+        const examineMessageId = await messenger.publishExamineTask(task._id.toString(), delayInSeconds)
+        const { taskCollection } = await initDb()
+        await taskCollection.updateOne(
+          { _id: task._id },
+          {
+            $set : {
+              examineMessageId
+            }
+          }
+        )
       }
     }
   }

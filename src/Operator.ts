@@ -122,10 +122,9 @@ export default class Operator {
       let hasMore = true
       while (hasMore) {
         const tasks = await Task.findAllInChannel(limit, skip, operator.channel)
-        const messenger = await getMessenger()
         for (const task of tasks) {
           if (task._id) {
-            messenger.publishExamineTask(task._id.toString(), 0)
+            await Task.triggerExamine(task, 0)
           }
         }
         skip = skip + limit
@@ -183,6 +182,7 @@ export default class Operator {
 
           // Prepare axios request config
           const config : AxiosRequestConfig = {
+            timeout: parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60') * 1000,
             ...operator.requestConfig
           }
 

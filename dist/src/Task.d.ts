@@ -165,6 +165,9 @@ import TaskChild from "./TaskChild";
  *             assignedAt:
  *               type: string
  *               description: The timestamp when the task was acquired.
+ *             executeMessageId:
+ *               type: string
+ *               description: When a task is executed via a webhook, the id of the message that will trigger the http request goes here.
  */
 export default class Task {
     _id?: ObjectId;
@@ -189,6 +192,8 @@ export default class Task {
     parentIds: ObjectId[];
     assignedTo: string | null;
     assignedAt: Date | null;
+    executeMessageId: string | null;
+    examineMessageId: string | null;
     constructor(taskGroupId: ObjectId, name: string, channel: string, input?: object | null, parentIds?: ObjectId[], isPaused?: boolean, workgroup?: string | null, key?: string | null, remainingAttempts?: number, priority?: number, progressWeight?: number, isSeed?: boolean);
     static findById(id: ObjectId): Promise<Task>;
     static updateById(id: ObjectId, updates: any): Promise<Task>;
@@ -197,7 +202,7 @@ export default class Task {
     static findAllIncompleteInWorkgroup(workgroup: string, limit?: number, skip?: number): Promise<Task[]>;
     static findAllIncomplete(limit?: number, skip?: number): Promise<Task[]>;
     static getChannels(): Promise<any[]>;
-    static fromData(taskGroupId: ObjectId, data: any): Promise<Task>;
+    static fromData(taskGroupId: ObjectId, data: any, skipExamine?: boolean): Promise<Task>;
     static findChildren(id: ObjectId): Promise<Task[]>;
     static findParents(id: ObjectId): Promise<Task[]>;
     static deleteById(id: ObjectId): Promise<any>;
@@ -212,5 +217,6 @@ export default class Task {
     static operatorAcquire(id: ObjectId, workerId: string): Promise<Task | null>;
     static examine(id: ObjectId): Promise<any>;
     static bootstrap(): Promise<void>;
+    static triggerExamine(task: Task, delayInSeconds: number): Promise<void>;
 }
 //# sourceMappingURL=Task.d.ts.map

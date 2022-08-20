@@ -211,6 +211,9 @@ var Messenger_1 = require("./Messenger");
  *             assignedAt:
  *               type: string
  *               description: The timestamp when the task was acquired.
+ *             executeMessageId:
+ *               type: string
+ *               description: When a task is executed via a webhook, the id of the message that will trigger the http request goes here.
  */
 var Task = /** @class */ (function () {
     function Task(taskGroupId, name, channel, input, parentIds, isPaused, workgroup, key, remainingAttempts, priority, progressWeight, isSeed) {
@@ -244,6 +247,8 @@ var Task = /** @class */ (function () {
         this.parentIds = parentIds;
         this.assignedTo = null;
         this.assignedAt = null;
+        this.executeMessageId = null;
+        this.examineMessageId = null;
     }
     Task.findById = function (id) {
         return __awaiter(this, void 0, void 0, function () {
@@ -263,7 +268,7 @@ var Task = /** @class */ (function () {
     };
     Task.updateById = function (id, updates) {
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, task, messenger;
+            var taskCollection, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()
@@ -278,6 +283,8 @@ var Task = /** @class */ (function () {
                         delete updates.isComplete;
                         delete updates.assignedTo;
                         delete updates.assignedAt;
+                        delete updates.executeMessageId;
+                        delete updates.examineMessageId;
                         delete updates.output;
                         delete updates.errors;
                         delete updates.createdAt;
@@ -292,10 +299,9 @@ var Task = /** @class */ (function () {
                         task = _a.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', task);
                         if (!!task.isComplete) return [3 /*break*/, 5];
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
                     case 4:
-                        messenger = _a.sent();
-                        messenger.publishExamineTask(id.toString(), 0);
+                        _a.sent();
                         _a.label = 5;
                     case 5: return [2 /*return*/, task];
                 }
@@ -371,13 +377,23 @@ var Task = /** @class */ (function () {
         if (limit === void 0) { limit = -1; }
         if (skip === void 0) { skip = 0; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, q, tasks;
+            var taskCollection, now, q, tasks;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
                     case 1:
                         taskCollection = (_a.sent()).taskCollection;
-                        q = taskCollection.find({ isComplete: false });
+                        now = luxon_1.DateTime.utc().toJSDate();
+                        q = taskCollection.find({
+                            isComplete: false,
+                            isPaused: false,
+                            parentsComplete: true,
+                            remainingAttempts: { $gt: 0 },
+                            $or: [
+                                { runAfter: { $lt: now } },
+                                { runAfter: null }
+                            ]
+                        });
                         if (limit > 0) {
                             q.limit(limit);
                         }
@@ -431,9 +447,10 @@ var Task = /** @class */ (function () {
         });
     };
     // Helper to create a task from a POST request
-    Task.fromData = function (taskGroupId, data) {
+    Task.fromData = function (taskGroupId, data, skipExamine) {
+        if (skipExamine === void 0) { skipExamine = false; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, group, document, allParentsAreComplete, parentObjectIds, _i, _a, parentId, parentObjectId, parent_1, insertResult, task, messenger;
+            var taskCollection, group, document, allParentsAreComplete, parentObjectIds, _i, _a, parentId, parentObjectId, parent_1, insertResult, task;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -463,7 +480,9 @@ var Task = /** @class */ (function () {
                             createdAt: luxon_1.DateTime.utc().toJSDate(),
                             parentIds: [],
                             assignedTo: null,
-                            assignedAt: null
+                            assignedAt: null,
+                            executeMessageId: null,
+                            examineMessageId: null
                         };
                         if (!data.parentIds) return [3 /*break*/, 7];
                         allParentsAreComplete = true;
@@ -500,11 +519,12 @@ var Task = /** @class */ (function () {
                     case 9:
                         task = _b.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:create', task);
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        if (!!skipExamine) return [3 /*break*/, 11];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
                     case 10:
-                        messenger = _b.sent();
-                        messenger.publishExamineTask(insertResult.insertedId.toString(), 0);
-                        return [2 /*return*/, task];
+                        _b.sent();
+                        _b.label = 11;
+                    case 11: return [2 /*return*/, task];
                 }
             });
         });
@@ -596,7 +616,7 @@ var Task = /** @class */ (function () {
     Task.resetById = function (id, remainingAttempts) {
         if (remainingAttempts === void 0) { remainingAttempts = 5; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, task, messenger;
+            var taskCollection, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -619,10 +639,9 @@ var Task = /** @class */ (function () {
                     case 3:
                         task = _a.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', task);
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
                     case 4:
-                        messenger = _a.sent();
-                        messenger.publishExamineTask(id.toString(), 0);
+                        _a.sent();
                         return [2 /*return*/, task];
                 }
             });
@@ -631,7 +650,7 @@ var Task = /** @class */ (function () {
     Task.retryById = function (id, remainingAttempts) {
         if (remainingAttempts === void 0) { remainingAttempts = 2; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, task, messenger;
+            var taskCollection, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -648,10 +667,9 @@ var Task = /** @class */ (function () {
                     case 3:
                         task = _a.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', task);
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
                     case 4:
-                        messenger = _a.sent();
-                        messenger.publishExamineTask(id.toString(), 0);
+                        _a.sent();
                         return [2 /*return*/, task];
                 }
             });
@@ -677,7 +695,7 @@ var Task = /** @class */ (function () {
                             throw new Error('Failed to create task group!');
                         }
                         newTaskData = lodash_1.default.omit(originalTask, [
-                            'taskGroupId', 'createdAt', 'errors', 'output', 'remainingAttempts', 'isPaused', 'parentsComplete', 'isComplete', 'runAfter', 'parentIds', 'assignedTo', 'assignedAt'
+                            'taskGroupId', 'createdAt', 'errors', 'output', 'remainingAttempts', 'isPaused', 'parentsComplete', 'isComplete', 'runAfter', 'parentIds', 'assignedTo', 'assignedAt', 'executeMessageId', 'examineMessageId'
                         ]);
                         return [4 /*yield*/, Task.fromData(group._id, newTaskData)
                             // Return group
@@ -756,7 +774,7 @@ var Task = /** @class */ (function () {
         if (children === void 0) { children = []; }
         if (workgroupDelayInSeconds === void 0) { workgroupDelayInSeconds = 0; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, task, update, runAfter, pending_2, _i, children_2, child, _a, pending_1, child, canCreate, parentRealIds, _loop_1, _b, _c, parentId, createData, childTask, lastPendingCount, _d, children_3, child, error_1, randTimeout_1, directChildren, _e, directChildren_1, child, runAfter, messenger, tasks, _f, tasks_1, task_1, resultTask, messenger;
+            var taskCollection, task, update, runAfter, pending_2, _i, children_2, child, _a, pending_1, child, canCreate, parentRealIds, _loop_1, _b, _c, parentId, createData, childTask, lastPendingCount, _d, children_3, child, error_1, randTimeout_1, directChildren, _e, directChildren_1, child, runAfter, tasks, _f, tasks_1, task_1, resultTask;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -773,12 +791,15 @@ var Task = /** @class */ (function () {
                             return [2 /*return*/, task];
                         }
                         if (task.assignedTo != workerId) {
+                            Task.triggerExamine(task, 0);
                             throw new Error('Worker id did not match!');
                         }
-                        if (!error) return [3 /*break*/, 6];
+                        if (!error) return [3 /*break*/, 8];
                         update = {
                             assignedTo: null,
                             assignedAt: null,
+                            executeMessageId: null,
+                            examineMessageId: null
                         };
                         runAfter = luxon_1.DateTime.utc().plus({ seconds: task.errorDelayInSeconds }).toJSDate();
                         if (task.errorDelayInSeconds) {
@@ -807,6 +828,8 @@ var Task = /** @class */ (function () {
                             update: {
                                 assignedTo: null,
                                 assignedAt: null,
+                                executeMessageId: null,
+                                examineMessageId: null,
                                 error: error,
                                 isComplete: false,
                                 runAfter: runAfter,
@@ -814,10 +837,16 @@ var Task = /** @class */ (function () {
                             }
                         });
                         _g.label = 5;
-                    case 5: return [3 /*break*/, 23];
+                    case 5:
+                        if (!(task.remainingAttempts >= 1)) return [3 /*break*/, 7];
+                        return [4 /*yield*/, Task.triggerExamine(task, task.errorDelayInSeconds)];
                     case 6:
-                        _g.trys.push([6, 13, , 15]);
-                        if (!(children && children.length > 0)) return [3 /*break*/, 11];
+                        _g.sent();
+                        _g.label = 7;
+                    case 7: return [3 /*break*/, 25];
+                    case 8:
+                        _g.trys.push([8, 15, , 17]);
+                        if (!(children && children.length > 0)) return [3 /*break*/, 13];
                         pending_2 = [];
                         for (_i = 0, children_2 = children; _i < children_2.length; _i++) {
                             child = children_2[_i];
@@ -826,14 +855,14 @@ var Task = /** @class */ (function () {
                             }
                         }
                         _a = 0, pending_1 = pending_2;
-                        _g.label = 7;
-                    case 7:
-                        if (!(_a < pending_1.length)) return [3 /*break*/, 10];
+                        _g.label = 9;
+                    case 9:
+                        if (!(_a < pending_1.length)) return [3 /*break*/, 12];
                         child = pending_1[_a];
                         canCreate = false;
                         if (child._id) {
                             // Skip children that have been created (this shouldn't happen unless we screw up the way that "pending" is populated)
-                            return [3 /*break*/, 9];
+                            return [3 /*break*/, 11];
                         }
                         // We can create children that are roots (no parent ids)
                         if (!child._parent_ids) {
@@ -858,20 +887,20 @@ var Task = /** @class */ (function () {
                                 canCreate = true;
                             }
                         }
-                        if (!canCreate) return [3 /*break*/, 9];
+                        if (!canCreate) return [3 /*break*/, 11];
                         createData = lodash_1.default.cloneDeep(child);
                         delete createData._child_id;
                         delete createData._parent_ids;
-                        return [4 /*yield*/, Task.fromData(task.taskGroupId, createData)];
-                    case 8:
+                        return [4 /*yield*/, Task.fromData(task.taskGroupId, createData, true)];
+                    case 10:
                         childTask = _g.sent();
                         child.taskGroupId = task.taskGroupId;
                         child._id = childTask._id;
-                        _g.label = 9;
-                    case 9:
+                        _g.label = 11;
+                    case 11:
                         _a++;
-                        return [3 /*break*/, 7];
-                    case 10:
+                        return [3 /*break*/, 9];
+                    case 12:
                         lastPendingCount = pending_2.length;
                         pending_2 = [];
                         for (_d = 0, children_3 = children; _d < children_3.length; _d++) {
@@ -883,33 +912,35 @@ var Task = /** @class */ (function () {
                         if (lastPendingCount <= pending_2.length) {
                             throw Error("spawnChildren pending count did not decrease on iteration - something is wrong!");
                         }
-                        _g.label = 11;
-                    case 11: 
+                        _g.label = 13;
+                    case 13: 
                     // Mark task as complete
                     return [4 /*yield*/, taskCollection.updateOne({ _id: id }, {
                             $set: {
                                 assignedTo: null,
                                 assignedAt: null,
+                                executeMessageId: null,
+                                examineMessageId: null,
                                 output: output,
                                 isComplete: true,
                                 remainingAttempts: 0,
                                 runAfter: null
                             }
                         })];
-                    case 12:
+                    case 14:
                         // Mark task as complete
                         _g.sent();
-                        return [3 /*break*/, 15];
-                    case 13:
+                        return [3 /*break*/, 17];
+                    case 15:
                         error_1 = _g.sent();
                         // Remove any created children
                         return [4 /*yield*/, taskCollection.deleteMany({ parentIds: { $in: [id] } })];
-                    case 14:
+                    case 16:
                         // Remove any created children
                         _g.sent();
                         throw error_1;
-                    case 15:
-                        if (!task.key) return [3 /*break*/, 17];
+                    case 17:
+                        if (!task.key) return [3 /*break*/, 19];
                         return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, channel: task.channel, key: task.key }, {
                                 $set: {
                                     assignedTo: null,
@@ -920,7 +951,7 @@ var Task = /** @class */ (function () {
                                     remainingAttempts: 0
                                 }
                             })];
-                    case 16:
+                    case 18:
                         _g.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:release:key', {
                             channel: task.channel,
@@ -934,72 +965,72 @@ var Task = /** @class */ (function () {
                                 remainingAttempts: 0
                             }
                         });
-                        _g.label = 17;
-                    case 17:
+                        _g.label = 19;
+                    case 19:
                         randTimeout_1 = Math.floor(Math.random() * 1000);
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, randTimeout_1); })];
-                    case 18:
+                    case 20:
                         _g.sent();
                         return [4 /*yield*/, Task.findChildren(id)];
-                    case 19:
+                    case 21:
                         directChildren = _g.sent();
                         _e = 0, directChildren_1 = directChildren;
-                        _g.label = 20;
-                    case 20:
-                        if (!(_e < directChildren_1.length)) return [3 /*break*/, 23];
-                        child = directChildren_1[_e];
-                        return [4 /*yield*/, Task.syncParentsComplete(child)];
-                    case 21:
-                        _g.sent();
                         _g.label = 22;
                     case 22:
-                        _e++;
-                        return [3 /*break*/, 20];
+                        if (!(_e < directChildren_1.length)) return [3 /*break*/, 25];
+                        child = directChildren_1[_e];
+                        return [4 /*yield*/, Task.syncParentsComplete(child)];
                     case 23:
-                        if (!(workgroupDelayInSeconds && task.workgroup)) return [3 /*break*/, 27];
+                        _g.sent();
+                        _g.label = 24;
+                    case 24:
+                        _e++;
+                        return [3 /*break*/, 22];
+                    case 25:
+                        if (!(workgroupDelayInSeconds && task.workgroup)) return [3 /*break*/, 32];
                         runAfter = luxon_1.DateTime.utc().plus({ seconds: workgroupDelayInSeconds }).toJSDate();
                         return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, workgroup: task.workgroup }, {
                                 $set: {
                                     runAfter: runAfter
                                 }
                             })];
-                    case 24:
-                        _g.sent();
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
-                    case 25:
-                        messenger = _g.sent();
-                        return [4 /*yield*/, Task.findAllIncompleteInWorkgroup(task.workgroup)];
                     case 26:
+                        _g.sent();
+                        return [4 /*yield*/, Task.findAllIncompleteInWorkgroup(task.workgroup)];
+                    case 27:
                         tasks = _g.sent();
-                        for (_f = 0, tasks_1 = tasks; _f < tasks_1.length; _f++) {
-                            task_1 = tasks_1[_f];
-                            messenger.publishExamineTask(task_1._id.toString(), 0);
-                        }
+                        _f = 0, tasks_1 = tasks;
+                        _g.label = 28;
+                    case 28:
+                        if (!(_f < tasks_1.length)) return [3 /*break*/, 31];
+                        task_1 = tasks_1[_f];
+                        return [4 /*yield*/, Task.triggerExamine(task_1, workgroupDelayInSeconds)];
+                    case 29:
+                        _g.sent();
+                        _g.label = 30;
+                    case 30:
+                        _f++;
+                        return [3 /*break*/, 28];
+                    case 31:
                         realtime_1.default.emit(task.taskGroupId + '', 'workgroup:delay', {
                             workgroup: task.workgroup,
                             update: {
                                 runAfter: runAfter
                             }
                         });
-                        _g.label = 27;
-                    case 27: return [4 /*yield*/, Task.findById(id)];
-                    case 28:
+                        _g.label = 32;
+                    case 32: return [4 /*yield*/, Task.findById(id)];
+                    case 33:
                         resultTask = _g.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', resultTask);
-                        if (!!resultTask.isComplete) return [3 /*break*/, 30];
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
-                    case 29:
-                        messenger = _g.sent();
-                        messenger.publishExamineTask(id.toString(), 0);
-                        _g.label = 30;
-                    case 30: return [2 /*return*/, resultTask];
+                        return [2 /*return*/, resultTask];
                 }
             });
         });
     };
     Task.syncParentsComplete = function (task) {
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, completedParentsCount, _i, _a, parentId, parent_3, messenger;
+            var taskCollection, completedParentsCount, _i, _a, parentId, parent_3, originalParentsComplete;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -1025,7 +1056,8 @@ var Task = /** @class */ (function () {
                         _i++;
                         return [3 /*break*/, 2];
                     case 5:
-                        if (!(completedParentsCount === task.parentIds.length)) return [3 /*break*/, 7];
+                        if (!(completedParentsCount === task.parentIds.length)) return [3 /*break*/, 8];
+                        originalParentsComplete = task.parentsComplete;
                         return [4 /*yield*/, taskCollection.updateOne({ _id: task._id }, { $set: {
                                     parentsComplete: true
                                 } })];
@@ -1033,12 +1065,12 @@ var Task = /** @class */ (function () {
                         _b.sent();
                         task.parentsComplete = true;
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', task);
-                        _b.label = 7;
-                    case 7: return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
-                    case 8:
-                        messenger = _b.sent();
-                        messenger.publishExamineTask(task._id.toString(), 0);
-                        return [2 /*return*/];
+                        if (!!originalParentsComplete) return [3 /*break*/, 8];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
+                    case 7:
+                        _b.sent();
+                        _b.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -1077,57 +1109,56 @@ var Task = /** @class */ (function () {
     };
     Task.syncParents = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, updatedCount, messenger, tasks, _i, tasks_2, task, allParentsAreComplete, _a, _b, parentId, parent_5;
+            var taskCollection, updatedCount, tasks, _i, tasks_2, task, allParentsAreComplete, _a, _b, parentId, parent_5;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
                     case 1:
                         taskCollection = (_c.sent()).taskCollection;
                         updatedCount = 0;
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
-                    case 2:
-                        messenger = _c.sent();
                         return [4 /*yield*/, taskCollection.find({
                                 parentIds: { $exists: true, $not: { $size: 0 } },
                                 isComplete: false,
                                 parentsComplete: false,
                                 remainingAttempts: { $gt: 0 }
                             }).toArray()];
-                    case 3:
+                    case 2:
                         tasks = _c.sent();
                         _i = 0, tasks_2 = tasks;
-                        _c.label = 4;
-                    case 4:
+                        _c.label = 3;
+                    case 3:
                         if (!(_i < tasks_2.length)) return [3 /*break*/, 11];
                         task = tasks_2[_i];
                         allParentsAreComplete = true;
                         _a = 0, _b = task.parentIds;
-                        _c.label = 5;
-                    case 5:
-                        if (!(_a < _b.length)) return [3 /*break*/, 8];
+                        _c.label = 4;
+                    case 4:
+                        if (!(_a < _b.length)) return [3 /*break*/, 7];
                         parentId = _b[_a];
                         return [4 /*yield*/, Task.findById(parentId)];
-                    case 6:
+                    case 5:
                         parent_5 = _c.sent();
                         if (!parent_5.isComplete) {
                             allParentsAreComplete = false;
-                            return [3 /*break*/, 8];
+                            return [3 /*break*/, 7];
                         }
-                        _c.label = 7;
-                    case 7:
+                        _c.label = 6;
+                    case 6:
                         _a++;
-                        return [3 /*break*/, 5];
-                    case 8:
+                        return [3 /*break*/, 4];
+                    case 7:
                         if (!allParentsAreComplete) return [3 /*break*/, 10];
                         return [4 /*yield*/, taskCollection.updateOne({ _id: task._id }, { $set: { parentsComplete: true } })];
+                    case 8:
+                        _c.sent();
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
                     case 9:
                         _c.sent();
-                        messenger.publishExamineTask(task._id.toString(), 0);
                         updatedCount++;
                         _c.label = 10;
                     case 10:
                         _i++;
-                        return [3 /*break*/, 4];
+                        return [3 /*break*/, 3];
                     case 11: return [2 /*return*/, updatedCount];
                 }
             });
@@ -1221,7 +1252,7 @@ var Task = /** @class */ (function () {
     };
     Task.examine = function (id) {
         return __awaiter(this, void 0, void 0, function () {
-            var operatorCollection, task, messenger, runAfterHasPassed, examineDelay, now, operator;
+            var operatorCollection, task, messenger, runAfterHasPassed, examineDelay, now, messagePending, operator, executeMessageId, taskCollection;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
@@ -1250,30 +1281,45 @@ var Task = /** @class */ (function () {
                                 examineDelay = Math.ceil((task.runAfter.getTime() - now.getTime()) / 1000) + 1;
                             }
                         }
-                        if (!(!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed)) return [3 /*break*/, 7];
-                        return [4 /*yield*/, operatorCollection.findOne({ channel: task.channel })];
+                        if (!(!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed)) return [3 /*break*/, 10];
+                        return [4 /*yield*/, messenger.isExecutePending(task.executeMessageId)];
                     case 4:
-                        operator = _a.sent();
-                        if (!(operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL)) return [3 /*break*/, 6];
-                        return [4 /*yield*/, messenger.publishExecuteTask(id.toString())];
+                        messagePending = _a.sent();
+                        console.log("~~ dbg executeMessagePending", messagePending, task.executeMessageId);
+                        if (!!messagePending) return [3 /*break*/, 9];
+                        return [4 /*yield*/, operatorCollection.findOne({ channel: task.channel })];
                     case 5:
-                        _a.sent();
-                        _a.label = 6;
-                    case 6: return [3 /*break*/, 9];
+                        operator = _a.sent();
+                        if (!(operator || process.env.CREW_VIRTUAL_OPERATOR_BASE_URL)) return [3 /*break*/, 9];
+                        return [4 /*yield*/, messenger.publishExecuteTask(id.toString())];
+                    case 6:
+                        executeMessageId = _a.sent();
+                        return [4 /*yield*/, (0, database_1.default)()];
                     case 7:
-                        if (!examineDelay) return [3 /*break*/, 9];
-                        return [4 /*yield*/, messenger.publishExamineTask(id.toString(), examineDelay)];
+                        taskCollection = (_a.sent()).taskCollection;
+                        return [4 /*yield*/, taskCollection.updateOne({ _id: id }, {
+                                $set: {
+                                    executeMessageId: executeMessageId
+                                }
+                            })];
                     case 8:
                         _a.sent();
                         _a.label = 9;
-                    case 9: return [2 /*return*/];
+                    case 9: return [3 /*break*/, 12];
+                    case 10:
+                        if (!examineDelay) return [3 /*break*/, 12];
+                        return [4 /*yield*/, Task.triggerExamine(task, examineDelay)];
+                    case 11:
+                        _a.sent();
+                        _a.label = 12;
+                    case 12: return [2 /*return*/];
                 }
             });
         });
     };
     Task.bootstrap = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var limit, skip, hasMore, tasks, messenger, _i, tasks_3, task;
+            var limit, skip, hasMore, tasks, _i, tasks_3, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1282,25 +1328,64 @@ var Task = /** @class */ (function () {
                         hasMore = true;
                         _a.label = 1;
                     case 1:
-                        if (!hasMore) return [3 /*break*/, 4];
+                        if (!hasMore) return [3 /*break*/, 7];
                         return [4 /*yield*/, Task.findAllIncomplete(limit, skip)];
                     case 2:
                         tasks = _a.sent();
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        _i = 0, tasks_3 = tasks;
+                        _a.label = 3;
                     case 3:
-                        messenger = _a.sent();
-                        for (_i = 0, tasks_3 = tasks; _i < tasks_3.length; _i++) {
-                            task = tasks_3[_i];
-                            if (task._id) {
-                                messenger.publishExamineTask(task._id.toString(), 0);
-                            }
-                        }
+                        if (!(_i < tasks_3.length)) return [3 /*break*/, 6];
+                        task = tasks_3[_i];
+                        if (!task._id) return [3 /*break*/, 5];
+                        return [4 /*yield*/, Task.triggerExamine(task, 0)];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 3];
+                    case 6:
                         skip = skip + limit;
                         if (tasks.length < limit) {
                             hasMore = false;
                         }
                         return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Task.triggerExamine = function (task, delayInSeconds) {
+        return __awaiter(this, void 0, void 0, function () {
+            var messenger, messagePending, examineMessageId, taskCollection;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!task._id) return [3 /*break*/, 6];
+                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                    case 1:
+                        messenger = _a.sent();
+                        return [4 /*yield*/, messenger.isExaminePending(task.executeMessageId)];
+                    case 2:
+                        messagePending = _a.sent();
+                        console.log("~~ dbg examineMessagePending", messagePending, task.executeMessageId);
+                        if (!!messagePending) return [3 /*break*/, 6];
+                        return [4 /*yield*/, messenger.publishExamineTask(task._id.toString(), delayInSeconds)];
+                    case 3:
+                        examineMessageId = _a.sent();
+                        return [4 /*yield*/, (0, database_1.default)()];
+                    case 4:
+                        taskCollection = (_a.sent()).taskCollection;
+                        return [4 /*yield*/, taskCollection.updateOne({ _id: task._id }, {
+                                $set: {
+                                    examineMessageId: examineMessageId
+                                }
+                            })];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });

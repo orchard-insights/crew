@@ -110,10 +110,9 @@ export default class TaskGroup {
       }
     })
 
-    const messenger = await getMessenger()
     const tasks = await Task.findAllInGroup(id)
     for (const task of tasks) {
-      messenger.publishExamineTask(task._id!.toString(), 0)  
+      await Task.triggerExamine(task, 0)
     }
 
     realtime.emit (id + '', 'group:retry', null)
@@ -145,10 +144,9 @@ export default class TaskGroup {
       }
     })
 
-    const messenger = await getMessenger()
     const tasks = await Task.findAllInGroup(id)
     for (const task of tasks) {
-      messenger.publishExamineTask(task._id!.toString(), 0)  
+      await Task.triggerExamine(task, 0)
     }
 
     realtime.emit (id + '', 'group:reset', null)
@@ -170,10 +168,9 @@ export default class TaskGroup {
     await groupCollection.updateOne({ _id: id }, { $set: { isPaused }})
     group.isPaused = isPaused
 
-    const messenger = await getMessenger()
     const tasks = await Task.findAllInGroup(id)
     for (const task of tasks) {
-      messenger.publishExamineTask(task._id!.toString(), 0)  
+      await Task.triggerExamine(task, 0)
     }
 
     realtime.emit (id + '', 'group:syncPause', { isPaused })

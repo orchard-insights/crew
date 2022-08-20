@@ -16,7 +16,9 @@ Features:
 - Can manage rate limit errors by pausing all tasks in same workgroup
 - Merge duplicate tasks
 - Workers can be written in any language
-- Workers can either poll for tasks, or receive them via webhooks
+- Workers can poll for tasks or receive them via webhooks
+
+**The webhooks feature of this tool is currently not ready for production use.**
 
 ## Quickstart
 

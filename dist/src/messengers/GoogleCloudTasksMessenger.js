@@ -56,7 +56,7 @@ var CloudTasksMessenger = /** @class */ (function () {
     CloudTasksMessenger.prototype.publishExamineTask = function (taskId, delayInSeconds) {
         if (delayInSeconds === void 0) { delayInSeconds = 0; }
         return __awaiter(this, void 0, void 0, function () {
-            var url;
+            var url, messageId;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -64,15 +64,15 @@ var CloudTasksMessenger = /** @class */ (function () {
                         console.log('~~ publishExamineTask', url, delayInSeconds);
                         return [4 /*yield*/, this.enqueue(this.examineQueueName, url, { taskId: taskId, action: 'examine' }, delayInSeconds)];
                     case 1:
-                        _a.sent();
-                        return [2 /*return*/];
+                        messageId = _a.sent();
+                        return [2 /*return*/, messageId];
                 }
             });
         });
     };
     CloudTasksMessenger.prototype.publishExecuteTask = function (taskId) {
         return __awaiter(this, void 0, void 0, function () {
-            var url;
+            var url, messageId;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -80,8 +80,8 @@ var CloudTasksMessenger = /** @class */ (function () {
                         console.log('~~ publishExecuteTask', url);
                         return [4 /*yield*/, this.enqueue(this.executeQueueName, url, { taskId: taskId, action: 'execute' })];
                     case 1:
-                        _a.sent();
-                        return [2 /*return*/];
+                        messageId = _a.sent();
+                        return [2 /*return*/, messageId];
                 }
             });
         });
@@ -97,7 +97,7 @@ var CloudTasksMessenger = /** @class */ (function () {
                         project = process.env.CREW_QUEUE_PROJECT || '';
                         if (!location || !project) {
                             console.warn('Unable to dispatch cloud task - CREW_QUEUE_LOCATION or CREW_QUEUE_PROJECT environment variable not set!');
-                            return [2 /*return*/];
+                            return [2 /*return*/, null];
                         }
                         parent = cloudTasksClient.queuePath(project, location, queue);
                         task = {
@@ -125,20 +125,71 @@ var CloudTasksMessenger = /** @class */ (function () {
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
-                        console.log("Creating cloud task:");
-                        console.log(task);
                         queueRequest = { parent: parent, task: task };
                         return [4 /*yield*/, cloudTasksClient.createTask(queueRequest)];
                     case 2:
                         queueResponse = (_a.sent())[0];
                         console.log("Created cloud task " + queueResponse.name);
-                        return [3 /*break*/, 4];
+                        return [2 /*return*/, queueResponse.name || null];
                     case 3:
                         error_1 = _a.sent();
                         console.error('Failed to create cloud task!', error_1);
                         return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                    case 4: return [2 /*return*/, null];
                 }
+            });
+        });
+    };
+    CloudTasksMessenger.prototype._isTaskPending = function (taskId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!taskId) {
+                            return [2 /*return*/, false];
+                        }
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, cloudTasksClient.getTask({ name: taskId })];
+                    case 2:
+                        res = _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_2 = _a.sent();
+                        // Cloud tasks returns the following error when a task no longer exists:
+                        /*
+                        {
+                          code: 5,
+                          details: 'The task no longer exists, though a task with this name existed recently. The task either successfully completed or was deleted.',
+                          metadata: Metadata {
+                            internalRepr: Map(1) { 'grpc-server-stats-bin' => [Array] },
+                            options: {}
+                          },
+                          note: 'Exception occurred in retry method that was not classified as transient'
+                        }
+                        */
+                        if (error_2.code === 5) {
+                            return [2 /*return*/, false];
+                        }
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/, true];
+                }
+            });
+        });
+    };
+    CloudTasksMessenger.prototype.isExaminePending = function (messageId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._isTaskPending(messageId)];
+            });
+        });
+    };
+    CloudTasksMessenger.prototype.isExecutePending = function (messageId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._isTaskPending(messageId)];
             });
         });
     };

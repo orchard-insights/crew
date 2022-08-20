@@ -16,26 +16,28 @@ export default class CloudTasksMessenger implements Messenger {
     this.executeQueueName = _executeQueueName
   }
 
-  async publishExamineTask(taskId: string, delayInSeconds = 0): Promise<any> {
+  async publishExamineTask(taskId: string, delayInSeconds = 0): Promise<string | null> {
     const url = this.baseUrl + `api/v1/task/${taskId}/examine?accessToken=${this.accessToken}`
     console.log('~~ publishExamineTask', url, delayInSeconds)
-    await this.enqueue(this.examineQueueName, url, {taskId, action: 'examine'}, delayInSeconds)
+    const messageId = await this.enqueue(this.examineQueueName, url, {taskId, action: 'examine'}, delayInSeconds)
+    return messageId
   }
 
-  async publishExecuteTask(taskId: string): Promise<any> {
+  async publishExecuteTask(taskId: string): Promise<string | null> {
     const url = this.baseUrl + `api/v1/task/${taskId}/execute?accessToken=${this.accessToken}`
     console.log('~~ publishExecuteTask', url)
-    await this.enqueue(this.executeQueueName, url, {taskId, action: 'execute'})
+    const messageId = await this.enqueue(this.executeQueueName, url, {taskId, action: 'execute'})
+    return messageId
   }
 
-  async enqueue(queue: string, url: string, payload: any, delayInSeconds = 0) {
+  async enqueue(queue: string, url: string, payload: any, delayInSeconds = 0) : Promise<string | null> {
 
     const location = process.env.CREW_QUEUE_LOCATION || '';
     const project = process.env.CREW_QUEUE_PROJECT || '';
 
     if (!location || !project) {
       console.warn('Unable to dispatch cloud task - CREW_QUEUE_LOCATION or CREW_QUEUE_PROJECT environment variable not set!')
-      return
+      return null
     }
 
     // Construct the fully qualified queue name.
@@ -68,13 +70,47 @@ export default class CloudTasksMessenger implements Messenger {
 
     // Send create task request.
     try {
-      console.log("Creating cloud task:");
-      console.log(task);
       const queueRequest = {parent: parent, task: task};
       const [queueResponse] = await cloudTasksClient.createTask(queueRequest);
       console.log(`Created cloud task ${queueResponse.name}`);
+      return queueResponse.name || null
     } catch (error) {
       console.error('Failed to create cloud task!', error)
     }
+    return null
+  }
+
+  async _isTaskPending(taskId: string | null): Promise<boolean> {
+    if (!taskId) {
+      return false
+    }
+    try {
+      const res = await cloudTasksClient.getTask({name: taskId})
+    } catch (error) {
+      // Cloud tasks returns the following error when a task no longer exists:
+      /*
+      {
+        code: 5,
+        details: 'The task no longer exists, though a task with this name existed recently. The task either successfully completed or was deleted.',
+        metadata: Metadata {
+          internalRepr: Map(1) { 'grpc-server-stats-bin' => [Array] },
+          options: {}
+        },
+        note: 'Exception occurred in retry method that was not classified as transient'
+      }
+      */
+      if ((error as any).code === 5) {
+        return false
+      }
+    }
+    return true
+  }
+
+  async isExaminePending(messageId: string | null): Promise<boolean> {
+    return this._isTaskPending(messageId)
+  }
+
+  async isExecutePending(messageId: string | null): Promise<boolean> {
+    return this._isTaskPending(messageId)
   }
 }

@@ -148,6 +148,9 @@ function crew (options: CrewOptions) : express.Router {
     Task.bootstrap().then(() => {
       console.log(`~~ bootstraped tasks`)
     })
+    Task.syncParents().then(() => {
+      console.log(`~~ ran syncParents`)
+    })
 
     // Home
     router.get('/', unhandledExceptionsHandler(
@@ -1267,7 +1270,7 @@ function crew (options: CrewOptions) : express.Router {
      *       200:
      *         description: Admin task succeeded
      */
-     router.post('/api/v1/clean', unhandledExceptionsHandler(
+     router.all('/api/v1/clean', unhandledExceptionsHandler(
       async (req, res) => {
         if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
           await TaskGroup.cleanExpired()
@@ -1287,7 +1290,7 @@ function crew (options: CrewOptions) : express.Router {
      *       200:
      *         description: Admin task succeeded
      */
-     router.post('/api/v1/bootstrap', unhandledExceptionsHandler(
+     router.all('/api/v1/bootstrap', unhandledExceptionsHandler(
       async (req, res) => {
         await Task.bootstrap()
         res.send({success: true})
@@ -1305,7 +1308,7 @@ function crew (options: CrewOptions) : express.Router {
      *       200:
      *         description: Admin task succeeded
      */
-     router.post('/api/v1/sync', unhandledExceptionsHandler(
+     router.all('/api/v1/sync', unhandledExceptionsHandler(
       async (req, res) => {
         await Task.syncParents()
         res.send({success: true})
@@ -1321,7 +1324,7 @@ function crew (options: CrewOptions) : express.Router {
   if (process.env.CREW_USE_EXTERNAL_CRON === 'yes') {
     bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
       Task.bootstrap().then(() => {
-        console.log(`~~ bootstraped tasks`)
+        console.log(`~~ bootstrapped tasks`)
       })
     })
 

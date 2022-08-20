@@ -56,7 +56,6 @@ var realtime_1 = __importDefault(require("./realtime"));
 var database_1 = __importDefault(require("./database"));
 var Task_1 = __importDefault(require("./Task"));
 var axios_1 = __importDefault(require("axios"));
-var Messenger_1 = require("./Messenger");
 /**
  * @openapi
  * components:
@@ -225,35 +224,40 @@ var Operator = /** @class */ (function () {
     };
     Operator.bootstrap = function (operator) {
         return __awaiter(this, void 0, void 0, function () {
-            var limit, skip, hasMore, tasks, messenger, _i, tasks_1, task;
+            var limit, skip, hasMore, tasks, _i, tasks_1, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!operator.isPaused) return [3 /*break*/, 4];
+                        if (!!operator.isPaused) return [3 /*break*/, 7];
                         limit = 100;
                         skip = 0;
                         hasMore = true;
                         _a.label = 1;
                     case 1:
-                        if (!hasMore) return [3 /*break*/, 4];
+                        if (!hasMore) return [3 /*break*/, 7];
                         return [4 /*yield*/, Task_1.default.findAllInChannel(limit, skip, operator.channel)];
                     case 2:
                         tasks = _a.sent();
-                        return [4 /*yield*/, (0, Messenger_1.getMessenger)()];
+                        _i = 0, tasks_1 = tasks;
+                        _a.label = 3;
                     case 3:
-                        messenger = _a.sent();
-                        for (_i = 0, tasks_1 = tasks; _i < tasks_1.length; _i++) {
-                            task = tasks_1[_i];
-                            if (task._id) {
-                                messenger.publishExamineTask(task._id.toString(), 0);
-                            }
-                        }
+                        if (!(_i < tasks_1.length)) return [3 /*break*/, 6];
+                        task = tasks_1[_i];
+                        if (!task._id) return [3 /*break*/, 5];
+                        return [4 /*yield*/, Task_1.default.triggerExamine(task, 0)];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
+                        _i++;
+                        return [3 /*break*/, 3];
+                    case 6:
                         skip = skip + limit;
                         if (tasks.length < limit) {
                             hasMore = false;
                         }
                         return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -303,7 +307,7 @@ var Operator = /** @class */ (function () {
                         ];
                     case 7:
                         parents = _b.sent();
-                        config = __assign({}, operator.requestConfig);
+                        config = __assign({ timeout: parseInt(process.env.CREW_ABANDONED_TASK_INTERVAL_IN_SECONDS || '60') * 1000 }, operator.requestConfig);
                         _b.label = 8;
                     case 8:
                         _b.trys.push([8, 11, , 18]);
