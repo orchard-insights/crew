@@ -168,9 +168,11 @@ export default class TaskGroup {
     await groupCollection.updateOne({ _id: id }, { $set: { isPaused }})
     group.isPaused = isPaused
 
-    const tasks = await Task.findAllInGroup(id)
-    for (const task of tasks) {
-      await Task.triggerExamine(task, 0)
+    if (!isPaused) {
+      const tasks = await Task.findAllInGroup(id)
+      for (const task of tasks) {
+        await Task.triggerExamine(task, 0)
+      }
     }
 
     realtime.emit (id + '', 'group:syncPause', { isPaused })

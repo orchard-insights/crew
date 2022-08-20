@@ -337,6 +337,7 @@ var TaskGroup = /** @class */ (function () {
                         // Pause task group
                         _b.sent();
                         group.isPaused = isPaused;
+                        if (!!isPaused) return [3 /*break*/, 9];
                         return [4 /*yield*/, Task_1.default.findAllInGroup(id)];
                     case 5:
                         tasks = _b.sent();
