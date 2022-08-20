@@ -1107,7 +1107,8 @@ var Task = /** @class */ (function () {
             });
         });
     };
-    Task.syncParents = function () {
+    Task.syncParents = function (limit) {
+        if (limit === void 0) { limit = 100; }
         return __awaiter(this, void 0, void 0, function () {
             var taskCollection, updatedCount, tasks, _i, tasks_2, task, allParentsAreComplete, _a, _b, parentId, parent_5;
             return __generator(this, function (_c) {
@@ -1121,7 +1122,7 @@ var Task = /** @class */ (function () {
                                 isComplete: false,
                                 parentsComplete: false,
                                 remainingAttempts: { $gt: 0 }
-                            }).toArray()];
+                            }).limit(limit).toArray()];
                     case 2:
                         tasks = _c.sent();
                         _i = 0, tasks_2 = tasks;
@@ -1317,41 +1318,29 @@ var Task = /** @class */ (function () {
             });
         });
     };
-    Task.bootstrap = function () {
+    Task.bootstrap = function (limit) {
+        if (limit === void 0) { limit = 100; }
         return __awaiter(this, void 0, void 0, function () {
-            var limit, skip, hasMore, tasks, _i, tasks_3, task;
+            var tasks, _i, tasks_3, task;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        limit = 100;
-                        skip = 0;
-                        hasMore = true;
-                        _a.label = 1;
+                    case 0: return [4 /*yield*/, Task.findAllIncomplete(limit, 0)];
                     case 1:
-                        if (!hasMore) return [3 /*break*/, 7];
-                        return [4 /*yield*/, Task.findAllIncomplete(limit, skip)];
-                    case 2:
                         tasks = _a.sent();
                         _i = 0, tasks_3 = tasks;
-                        _a.label = 3;
-                    case 3:
-                        if (!(_i < tasks_3.length)) return [3 /*break*/, 6];
+                        _a.label = 2;
+                    case 2:
+                        if (!(_i < tasks_3.length)) return [3 /*break*/, 5];
                         task = tasks_3[_i];
-                        if (!task._id) return [3 /*break*/, 5];
+                        if (!task._id) return [3 /*break*/, 4];
                         return [4 /*yield*/, Task.triggerExamine(task, 0)];
-                    case 4:
+                    case 3:
                         _a.sent();
-                        _a.label = 5;
-                    case 5:
+                        _a.label = 4;
+                    case 4:
                         _i++;
-                        return [3 /*break*/, 3];
-                    case 6:
-                        skip = skip + limit;
-                        if (tasks.length < limit) {
-                            hasMore = false;
-                        }
-                        return [3 /*break*/, 1];
-                    case 7: return [2 /*return*/];
+                        return [3 /*break*/, 2];
+                    case 5: return [2 /*return*/];
                 }
             });
         });

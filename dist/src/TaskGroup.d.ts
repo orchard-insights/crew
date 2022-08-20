@@ -37,6 +37,6 @@ export default class TaskGroup {
     static retryById(id: ObjectId, remainingAttempts?: number): Promise<any>;
     static resetById(id: ObjectId, remainingAttempts?: number): Promise<TaskGroup>;
     static syncPauseById(id: ObjectId, isPaused?: boolean): Promise<TaskGroup>;
-    static cleanExpired(): Promise<TaskGroup[]>;
+    static cleanExpired(limit?: number): Promise<TaskGroup[]>;
 }
 //# sourceMappingURL=TaskGroup.d.ts.map

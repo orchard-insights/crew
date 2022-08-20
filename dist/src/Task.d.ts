@@ -213,10 +213,10 @@ export default class Task {
     static release(id: ObjectId, workerId: string, error?: any, output?: any, children?: TaskChild[], workgroupDelayInSeconds?: number): Promise<Task>;
     static syncParentsComplete(task: Task): Promise<void>;
     static getParentsData(task: Task): Promise<any>;
-    static syncParents(): Promise<number>;
+    static syncParents(limit?: number): Promise<number>;
     static operatorAcquire(id: ObjectId, workerId: string): Promise<Task | null>;
     static examine(id: ObjectId): Promise<any>;
-    static bootstrap(): Promise<void>;
+    static bootstrap(limit?: number): Promise<void>;
     static triggerExamine(task: Task, delayInSeconds: number): Promise<void>;
 }
 //# sourceMappingURL=Task.d.ts.map

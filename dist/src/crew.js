@@ -1496,11 +1496,16 @@ function crew(options) {
          *         description: Admin task succeeded
          */
         router.all('/api/v1/clean', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var batch;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes')) return [3 /*break*/, 2];
-                        return [4 /*yield*/, TaskGroup_1.default.cleanExpired()];
+                        batch = req.query.batch || '';
+                        if (!batch) {
+                            batch = process.env.CREW_CLEAN_BATCH_SIZE || '20';
+                        }
+                        return [4 /*yield*/, TaskGroup_1.default.cleanExpired(parseInt(batch))];
                     case 1:
                         _a.sent();
                         _a.label = 2;
@@ -1522,9 +1527,15 @@ function crew(options) {
          *         description: Admin task succeeded
          */
         router.all('/api/v1/bootstrap', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var batch;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.default.bootstrap()];
+                    case 0:
+                        batch = req.query.batch || '';
+                        if (!batch) {
+                            batch = process.env.CREW_BOOTSTRAP_BATCH_SIZE || '100';
+                        }
+                        return [4 /*yield*/, Task_1.default.bootstrap(parseInt(batch))];
                     case 1:
                         _a.sent();
                         res.send({ success: true });
@@ -1544,9 +1555,15 @@ function crew(options) {
          *         description: Admin task succeeded
          */
         router.all('/api/v1/sync', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var batch;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, Task_1.default.syncParents()];
+                    case 0:
+                        batch = req.query.batch || '';
+                        if (!batch) {
+                            batch = process.env.CREW_SYNC_BATCH_SIZE || '100';
+                        }
+                        return [4 /*yield*/, Task_1.default.syncParents(parseInt(batch))];
                     case 1:
                         _a.sent();
                         res.send({ success: true });
@@ -1560,22 +1577,22 @@ function crew(options) {
     var syncParentsCompleteCron = null;
     // Allow cron to be disabled so tasks can be run by external scheduler if desired
     if (process.env.CREW_USE_EXTERNAL_CRON !== 'yes') {
-        bootstrapOperatorsCron = node_cron_1.default.schedule('*/5 * * * *', function () {
-            Task_1.default.bootstrap().then(function () {
+        bootstrapOperatorsCron = node_cron_1.default.schedule((process.env.CREW_BOOTSTRAP_SCHEDULE || '* * * * *'), function () {
+            Task_1.default.bootstrap(parseInt(process.env.CREW_BOOTSTRAP_BATCH_SIZE || '100')).then(function () {
                 console.log("~~ bootstrapped tasks");
             });
         });
-        cleanExpiredGroupsCron = node_cron_1.default.schedule('30 3 * * *', function () {
+        cleanExpiredGroupsCron = node_cron_1.default.schedule((process.env.CREW_CLEAN_SCHEDULE || '0 * * * *'), function () {
             if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-                TaskGroup_1.default.cleanExpired().then(function (result) {
+                TaskGroup_1.default.cleanExpired(parseInt(process.env.CREW_SYNC_CLEAN_SIZE || '20')).then(function (result) {
                     if (result.length > 0) {
                         console.log("~~ removed " + result.length + " expired task groups");
                     }
                 });
             }
         });
-        syncParentsCompleteCron = node_cron_1.default.schedule('*/5 * * * *', function () {
-            Task_1.default.syncParents().then(function (count) {
+        syncParentsCompleteCron = node_cron_1.default.schedule((process.env.CREW_SYNC_SCHEDULE || '* * * * *'), function () {
+            Task_1.default.syncParents(parseInt(process.env.CREW_SYNC_BATCH_SIZE || '100')).then(function (count) {
                 console.log("~~ syncd " + count + " task's parentsComplete");
             });
         });

@@ -1274,7 +1274,11 @@ function crew (options: CrewOptions) : express.Router {
      router.all('/api/v1/clean', unhandledExceptionsHandler(
       async (req, res) => {
         if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-          await TaskGroup.cleanExpired()
+          let batch = (req.query.batch as string) || ''
+          if (!batch) {
+            batch = process.env.CREW_CLEAN_BATCH_SIZE || '20'
+          }
+          await TaskGroup.cleanExpired(parseInt(batch))
         }
         res.send({success: true})
       }
@@ -1293,7 +1297,11 @@ function crew (options: CrewOptions) : express.Router {
      */
      router.all('/api/v1/bootstrap', unhandledExceptionsHandler(
       async (req, res) => {
-        await Task.bootstrap()
+        let batch = (req.query.batch as string) || ''
+        if (!batch) {
+          batch = process.env.CREW_BOOTSTRAP_BATCH_SIZE || '100'
+        }
+        await Task.bootstrap(parseInt(batch))
         res.send({success: true})
       }
     ))
@@ -1311,7 +1319,11 @@ function crew (options: CrewOptions) : express.Router {
      */
      router.all('/api/v1/sync', unhandledExceptionsHandler(
       async (req, res) => {
-        await Task.syncParents()
+        let batch = (req.query.batch as string) || ''
+        if (!batch) {
+          batch = process.env.CREW_SYNC_BATCH_SIZE || '100'
+        }
+        await Task.syncParents(parseInt(batch))
         res.send({success: true})
       }
     ))
@@ -1323,15 +1335,15 @@ function crew (options: CrewOptions) : express.Router {
 
   // Allow cron to be disabled so tasks can be run by external scheduler if desired
   if (process.env.CREW_USE_EXTERNAL_CRON !== 'yes') {
-    bootstrapOperatorsCron = cron.schedule('*/5 * * * *', () => {
-      Task.bootstrap().then(() => {
+    bootstrapOperatorsCron = cron.schedule((process.env.CREW_BOOTSTRAP_SCHEDULE || '* * * * *'), () => {
+      Task.bootstrap(parseInt(process.env.CREW_BOOTSTRAP_BATCH_SIZE || '100')).then(() => {
         console.log(`~~ bootstrapped tasks`)
       })
     })
 
-    cleanExpiredGroupsCron = cron.schedule('30 3 * * *', () => {
+    cleanExpiredGroupsCron = cron.schedule((process.env.CREW_CLEAN_SCHEDULE || '0 * * * *'), () => {
       if ((process.env.CREW_CLEAN_EXPIRED_GROUPS || 'yes') === 'yes') {
-        TaskGroup.cleanExpired().then((result) => {
+        TaskGroup.cleanExpired(parseInt(process.env.CREW_SYNC_CLEAN_SIZE || '20')).then((result) => {
           if (result.length > 0) {
             console.log(`~~ removed ${result.length} expired task groups`)
           }
@@ -1339,8 +1351,8 @@ function crew (options: CrewOptions) : express.Router {
       }
     })
 
-    syncParentsCompleteCron = cron.schedule('*/5 * * * *', () => {
-      Task.syncParents().then((count) => {
+    syncParentsCompleteCron = cron.schedule((process.env.CREW_SYNC_SCHEDULE || '* * * * *'), () => {
+      Task.syncParents(parseInt(process.env.CREW_SYNC_BATCH_SIZE || '100')).then((count) => {
         console.log(`~~ syncd ${count} task's parentsComplete`)
       })
     })

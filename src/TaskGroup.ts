@@ -177,11 +177,11 @@ export default class TaskGroup {
     return group
   }
 
-  static async cleanExpired() : Promise<TaskGroup[]> {
+  static async cleanExpired(limit = 20) : Promise<TaskGroup[]> {
     const { groupCollection } = await initDb()
     const expiredGroupIntervalInDays = parseInt(process.env.CREW_EXPIRED_GROUP_INTERVAL_IN_DAYS || '7')
     const threshold = DateTime.utc().minus({ days: expiredGroupIntervalInDays }).toJSDate()
-    const oldGroups = await groupCollection.find({ createdAt: { $lt: threshold } }).toArray() as TaskGroup[]
+    const oldGroups = await groupCollection.find({ createdAt: { $lt: threshold } }).limit(limit).toArray() as TaskGroup[]
     const deleted : TaskGroup[] = []
     for (const oldGroup of oldGroups) {
       if (oldGroup._id) {

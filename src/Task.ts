@@ -808,7 +808,7 @@ export default class Task {
     return parents
   }
 
-  static async syncParents() : Promise<number> {
+  static async syncParents(limit = 100) : Promise<number> {
     const { taskCollection } = await initDb()
     let updatedCount = 0
     // Find all tasks that may need parentsComplete sync'd
@@ -817,7 +817,7 @@ export default class Task {
       parentIds : { $exists: true, $not: {$size: 0} },
       isComplete: false,
       parentsComplete: false,
-      remainingAttempts: { $gt: 0 }}).toArray() as Task[]
+      remainingAttempts: { $gt: 0 }}).limit(limit).toArray() as Task[]
 
     for (const task of tasks) {
       let allParentsAreComplete = true
@@ -975,22 +975,12 @@ export default class Task {
     }
   }
 
-  static async bootstrap() : Promise<void> {
-    // Find all incomplete tasks and fire an examine for them
-
-    const limit = 100
-    let skip = 0
-    let hasMore = true
-    while (hasMore) {
-      const tasks = await Task.findAllIncomplete(limit, skip)
-      for (const task of tasks) {
-        if (task._id) {
-          await Task.triggerExamine(task, 0)
-        }
-      }
-      skip = skip + limit
-      if (tasks.length < limit) {
-        hasMore = false
+  static async bootstrap(limit = 100) : Promise<void> {
+    // Find batch of incomplete tasks and fire an examine for them
+    const tasks = await Task.findAllIncomplete(limit, 0)
+    for (const task of tasks) {
+      if (task._id) {
+        await Task.triggerExamine(task, 0)
       }
     }
   }

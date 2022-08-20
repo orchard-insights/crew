@@ -359,7 +359,8 @@ var TaskGroup = /** @class */ (function () {
             });
         });
     };
-    TaskGroup.cleanExpired = function () {
+    TaskGroup.cleanExpired = function (limit) {
+        if (limit === void 0) { limit = 20; }
         return __awaiter(this, void 0, void 0, function () {
             var groupCollection, expiredGroupIntervalInDays, threshold, oldGroups, deleted, _i, oldGroups_1, oldGroup;
             return __generator(this, function (_a) {
@@ -369,7 +370,7 @@ var TaskGroup = /** @class */ (function () {
                         groupCollection = (_a.sent()).groupCollection;
                         expiredGroupIntervalInDays = parseInt(process.env.CREW_EXPIRED_GROUP_INTERVAL_IN_DAYS || '7');
                         threshold = luxon_1.DateTime.utc().minus({ days: expiredGroupIntervalInDays }).toJSDate();
-                        return [4 /*yield*/, groupCollection.find({ createdAt: { $lt: threshold } }).toArray()];
+                        return [4 /*yield*/, groupCollection.find({ createdAt: { $lt: threshold } }).limit(limit).toArray()];
                     case 2:
                         oldGroups = _a.sent();
                         deleted = [];
