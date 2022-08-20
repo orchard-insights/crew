@@ -194,13 +194,14 @@ function crew(options) {
             databaseConnected = false;
             console.log('Database connection closed!');
         });
-        // Bootstrap tasks (also done in cron below)
-        Task_1.default.bootstrap().then(function () {
-            console.log("~~ bootstraped tasks");
-        });
-        Task_1.default.syncParents().then(function () {
-            console.log("~~ ran syncParents");
-        });
+        // Don't call these at startup - causes overload/freeze
+        // // Bootstrap tasks (also done in cron below)
+        // Task.bootstrap().then(() => {
+        //   console.log(`~~ bootstraped tasks`)
+        // })
+        // Task.syncParents().then(() => {
+        //   console.log(`~~ ran syncParents`)
+        // })
         // Home
         router.get('/', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {

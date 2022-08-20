@@ -144,13 +144,14 @@ function crew (options: CrewOptions) : express.Router {
       console.log('Database connection closed!')
     })
 
-    // Bootstrap tasks (also done in cron below)
-    Task.bootstrap().then(() => {
-      console.log(`~~ bootstraped tasks`)
-    })
-    Task.syncParents().then(() => {
-      console.log(`~~ ran syncParents`)
-    })
+    // Don't call these at startup - causes overload/freeze
+    // // Bootstrap tasks (also done in cron below)
+    // Task.bootstrap().then(() => {
+    //   console.log(`~~ bootstraped tasks`)
+    // })
+    // Task.syncParents().then(() => {
+    //   console.log(`~~ ran syncParents`)
+    // })
 
     // Home
     router.get('/', unhandledExceptionsHandler(
