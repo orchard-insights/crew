@@ -783,9 +783,7 @@ var Task = /** @class */ (function () {
             var taskCollection, task, update, runAfter, pending_2, _i, children_2, child, _a, pending_1, child, canCreate, parentRealIds, _loop_1, _b, _c, parentId, createData, childTask, lastPendingCount, _d, children_3, child, cdRunAfter, children_5, _e, children_4, child, applyDelay, childRunAfter, error_1, randTimeout_1, directChildren, _f, directChildren_1, child, runAfter, tasks, _g, tasks_1, task_1, resultTask;
             return __generator(this, function (_h) {
                 switch (_h.label) {
-                    case 0:
-                        console.log('~~ release', id, childrenDelayInSeconds);
-                        return [4 /*yield*/, (0, database_1.default)()];
+                    case 0: return [4 /*yield*/, (0, database_1.default)()];
                     case 1:
                         taskCollection = (_h.sent()).taskCollection;
                         return [4 /*yield*/, Task.findById(id)];

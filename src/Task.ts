@@ -545,8 +545,6 @@ export default class Task {
   }
 
   static async release(id: ObjectId, workerId: string, error: any = null, output: any = null, children: TaskChild[] = [], workgroupDelayInSeconds = 0, childrenDelayInSeconds = 0) : Promise<Task> {
-    console.log('~~ release', id, childrenDelayInSeconds)
-
     const { taskCollection } = await initDb()
     const task = await Task.findById(id)
     if (!task) {
