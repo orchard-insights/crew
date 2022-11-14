@@ -1,4 +1,5 @@
 export default interface TaskResponse {
   output: any,
-  children?: any[]
+  children?: any[],
+  childrenDelayInSeconds?: number
 }
