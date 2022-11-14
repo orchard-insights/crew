@@ -34,9 +34,6 @@ export default abstract class HttpWorker {
         if (this.pauseWorkgroupSeconds > 0) {
           executeResponse.workgroupDelayInSeconds = this.pauseWorkgroupSeconds
         }
-        if (req.body.childrenDelayInSeconds) {
-          executeResponse.childrenDelayInSeconds = parseInt(req.body.childrenDelayInSeconds)
-        }
         res.send(executeResponse)
       } catch (err) {
         let response : any = {}
