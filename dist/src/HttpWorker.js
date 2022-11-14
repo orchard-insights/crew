@@ -76,6 +76,9 @@ var HttpWorker = /** @class */ (function () {
                                 if (this.pauseWorkgroupSeconds > 0) {
                                     executeResponse.workgroupDelayInSeconds = this.pauseWorkgroupSeconds;
                                 }
+                                if (req.body.childrenDelayInSeconds) {
+                                    executeResponse.childrenDelayInSeconds = parseInt(req.body.childrenDelayInSeconds);
+                                }
                                 res.send(executeResponse);
                                 return [3 /*break*/, 4];
                             case 3:
