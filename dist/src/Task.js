@@ -473,7 +473,9 @@ var Task = /** @class */ (function () {
                             parentsComplete: false,
                             isComplete: false,
                             priority: data.priority || 0,
-                            runAfter: data.runAfter ? luxon_1.DateTime.fromISO(data.runAfter).toJSDate() : null,
+                            runAfter: data.runAfter ? (lodash_1.default.isString(data.runAfter)
+                                ? luxon_1.DateTime.fromISO(data.runAfter).toJSDate()
+                                : data.runAfter) : null,
                             progressWeight: data.progressWeight || 1,
                             isSeed: data.isSeed || false,
                             errorDelayInSeconds: lodash_1.default.has(data, 'errorDelayInSeconds') ? data.errorDelayInSeconds : 30,
@@ -895,6 +897,9 @@ var Task = /** @class */ (function () {
                         createData = lodash_1.default.cloneDeep(child);
                         delete createData._child_id;
                         delete createData._parent_ids;
+                        if (childrenDelayInSeconds && !createData.runAfter) {
+                            createData.runAfter = luxon_1.DateTime.utc().plus({ seconds: childrenDelayInSeconds }).toJSDate();
+                        }
                         return [4 /*yield*/, Task.fromData(task.taskGroupId, createData, true)];
                     case 10:
                         childTask = _h.sent();
@@ -940,7 +945,7 @@ var Task = /** @class */ (function () {
                         }
                         if (!applyDelay) return [3 /*break*/, 17];
                         return [4 /*yield*/, taskCollection.updateOne({ _id: child._id }, { $set: {
-                                    runAfter: cdRunAfter.toJSDate
+                                    runAfter: cdRunAfter.toJSDate()
                                 } })];
                     case 16:
                         _h.sent();

@@ -1,5 +1,6 @@
 import Worker from '../../src/Worker'
 import TaskResponse from '../../src/TaskResponse'
+import { DateTime } from 'luxon'
 
 // This worker is here as an example, and for testing only - do not deploy
 
@@ -12,7 +13,7 @@ export default class WorkerC extends Worker {
       throw new Error(data.throw)
     } else {
       await new Promise((resolve, reject) => {setTimeout(resolve, 2000)})
-      return {output: {message: "Worker C \' did it!"}, children: [
+      return {output: {message: "Worker C \' did it!"}, childrenDelayInSeconds: 60, children: [
           {
             _child_id: 1,
             channel: 'worker_a',
@@ -26,7 +27,8 @@ export default class WorkerC extends Worker {
             channel: 'worker_a',
             input: {'child': 'B'},
             key: 'same_key',
-            name: 'Child B'
+            name: 'Child B',
+            runAfter: DateTime.utc().plus({ seconds: 15 }).toISO()
           },
           {
             _child_id: 3,

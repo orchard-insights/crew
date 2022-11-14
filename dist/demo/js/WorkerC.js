@@ -55,6 +55,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var Worker_1 = __importDefault(require("../../src/Worker"));
+var luxon_1 = require("luxon");
 // This worker is here as an example, and for testing only - do not deploy
 var WorkerC = /** @class */ (function (_super) {
     __extends(WorkerC, _super);
@@ -74,7 +75,7 @@ var WorkerC = /** @class */ (function (_super) {
                     case 1: return [4 /*yield*/, new Promise(function (resolve, reject) { setTimeout(resolve, 2000); })];
                     case 2:
                         _a.sent();
-                        return [2 /*return*/, { output: { message: "Worker C \' did it!" }, children: [
+                        return [2 /*return*/, { output: { message: "Worker C \' did it!" }, childrenDelayInSeconds: 60, children: [
                                     {
                                         _child_id: 1,
                                         channel: 'worker_a',
@@ -88,7 +89,8 @@ var WorkerC = /** @class */ (function (_super) {
                                         channel: 'worker_a',
                                         input: { 'child': 'B' },
                                         key: 'same_key',
-                                        name: 'Child B'
+                                        name: 'Child B',
+                                        runAfter: luxon_1.DateTime.utc().plus({ seconds: 15 }).toISO()
                                     },
                                     {
                                         _child_id: 3,

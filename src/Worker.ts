@@ -133,7 +133,8 @@ export default abstract class Worker {
                 const releaseData : any = {
                   workerId: this.id,
                   output: executeResponse.output || null,
-                  children: executeResponse.children || []
+                  children: executeResponse.children || [],
+                  childrenDelayInSeconds: executeResponse.childrenDelayInSeconds || 0
                 }
                 if (this.pauseWorkgroupSeconds > 0) {
                   releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds

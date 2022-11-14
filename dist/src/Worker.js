@@ -200,7 +200,8 @@ var Worker = /** @class */ (function () {
                                             releaseData = {
                                                 workerId: this.id,
                                                 output: executeResponse_1.output || null,
-                                                children: executeResponse_1.children || []
+                                                children: executeResponse_1.children || [],
+                                                childrenDelayInSeconds: executeResponse_1.childrenDelayInSeconds || 0
                                             };
                                             if (this.pauseWorkgroupSeconds > 0) {
                                                 releaseData.workgroupDelayInSeconds = this.pauseWorkgroupSeconds;

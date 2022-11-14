@@ -350,7 +350,11 @@ export default class Task {
       parentsComplete: false,
       isComplete: false,
       priority: data.priority || 0,
-      runAfter: data.runAfter ? DateTime.fromISO(data.runAfter).toJSDate() : null,
+      runAfter: data.runAfter ? (
+        _.isString(data.runAfter)
+        ? DateTime.fromISO(data.runAfter).toJSDate()
+        : data.runAfter
+      ) : null,
       progressWeight: data.progressWeight || 1,
       isSeed: data.isSeed || false,
       errorDelayInSeconds: _.has(data, 'errorDelayInSeconds') ? data.errorDelayInSeconds : 30,
@@ -652,6 +656,10 @@ export default class Task {
               const createData = _.cloneDeep(child)
               delete createData._child_id
               delete createData._parent_ids
+
+              if (childrenDelayInSeconds && !createData.runAfter) {
+                createData.runAfter = DateTime.utc().plus({ seconds: childrenDelayInSeconds }).toJSDate()
+              }
               
               // Last param true => do not trigger an examine for creating the task
               // examines will be triggered for child tasks in the syncParentsComplete below
@@ -693,7 +701,7 @@ export default class Task {
               await taskCollection.updateOne(
                 {_id: child._id},
                 { $set: {
-                  runAfter: cdRunAfter.toJSDate
+                  runAfter: cdRunAfter.toJSDate()
                 } }
               )
             }

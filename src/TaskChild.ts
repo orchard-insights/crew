@@ -12,7 +12,7 @@ export default interface TaskChild {
   input?: object | null
   remainingAttempts?: number
   priority?: number
-  runAfter?: Date | null
+  runAfter?: Date | string | null
   progressWeight?: number
   isSeed?: boolean
   key?: string | null
