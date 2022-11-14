@@ -1235,7 +1235,7 @@ function crew(options) {
          *               $ref: '#/components/schemas/Task'
          */
         router.post('/api/v1/task/:id/release', unhandledExceptionsHandler(function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-            var error, output, children, workerId, workgroupDelayInSeconds, releaseResult;
+            var error, output, children, workerId, workgroupDelayInSeconds, childrenDelayInSeconds, releaseResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1247,7 +1247,8 @@ function crew(options) {
                         }
                         workerId = req.body.workerId;
                         workgroupDelayInSeconds = req.body.workgroupDelayInSeconds || 0;
-                        return [4 /*yield*/, Task_1.default.release(new mongodb_1.ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds)];
+                        childrenDelayInSeconds = req.body.childrenDelayInSeconds || 0;
+                        return [4 /*yield*/, Task_1.default.release(new mongodb_1.ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds)];
                     case 1:
                         releaseResult = _a.sent();
                         res.json(releaseResult);

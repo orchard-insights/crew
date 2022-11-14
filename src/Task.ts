@@ -27,6 +27,9 @@ import { getMessenger } from './Messenger'
  *         workgroupDelayInSeconds:
  *           type: integer
  *           description: When present all tasks with the same workgroup will be paused for this many seconds.  Used to manage rate limits in 3rd party APIs.
+ *         childrenDelayInSeconds:
+ *           type: integer
+ *           description: When present all child tasks will be paused for at least this many seconds.  Existing runAfter values that are too short will be increaased to meet the given delay.
  *         children:
  *           type: array
  *           items:
@@ -537,7 +540,7 @@ export default class Task {
     return task
   }
 
-  static async release(id: ObjectId, workerId: string, error: any = null, output: any = null, children: TaskChild[] = [], workgroupDelayInSeconds = 0) : Promise<Task> {
+  static async release(id: ObjectId, workerId: string, error: any = null, output: any = null, children: TaskChild[] = [], workgroupDelayInSeconds = 0, childrenDelayInSeconds = 0) : Promise<Task> {
     const { taskCollection } = await initDb()
     const task = await Task.findById(id)
     if (!task) {
@@ -669,6 +672,31 @@ export default class Task {
 
           if (lastPendingCount <= pending.length) {
             throw Error("spawnChildren pending count did not decrease on iteration - something is wrong!")
+          }
+        }
+
+        if (childrenDelayInSeconds) {
+          const cdRunAfter = DateTime.utc().plus({ seconds: childrenDelayInSeconds })
+          const children = await Task.findChildren(id)
+          for (const child of children) {
+            let applyDelay = false
+            if (child.runAfter) {
+              const childRunAfter = DateTime.fromJSDate(child.runAfter)
+              if (childRunAfter < cdRunAfter) {
+                applyDelay = true
+              }
+            } else {
+              applyDelay = true
+            }
+
+            if (applyDelay) {
+              await taskCollection.updateOne(
+                {_id: child._id},
+                { $set: {
+                  runAfter: cdRunAfter.toJSDate
+                } }
+              )
+            }
           }
         }
 
@@ -952,7 +980,6 @@ export default class Task {
     if (!task.isPaused && !task.isComplete && (task.parentsComplete || task.parentIds.length === 0) && task.remainingAttempts > 0 && runAfterHasPassed) {
       // If the task has an executeMessageId, check if message is still pending
       const messagePending = await messenger.isExecutePending(task.executeMessageId)
-      console.log("~~ dbg executeMessagePending", messagePending, task.executeMessageId)
       if (!messagePending) {
         // Only re-create a new execute task if there isn't a pending execute message for the task
         const operator = await operatorCollection.findOne({channel: task.channel}) as Operator

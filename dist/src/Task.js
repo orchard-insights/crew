@@ -65,6 +65,9 @@ var Messenger_1 = require("./Messenger");
  *         workgroupDelayInSeconds:
  *           type: integer
  *           description: When present all tasks with the same workgroup will be paused for this many seconds.  Used to manage rate limits in 3rd party APIs.
+ *         childrenDelayInSeconds:
+ *           type: integer
+ *           description: When present all child tasks will be paused for at least this many seconds.  Existing runAfter values that are too short will be increaased to meet the given delay.
  *         children:
  *           type: array
  *           items:
@@ -768,21 +771,22 @@ var Task = /** @class */ (function () {
             });
         });
     };
-    Task.release = function (id, workerId, error, output, children, workgroupDelayInSeconds) {
+    Task.release = function (id, workerId, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds) {
         if (error === void 0) { error = null; }
         if (output === void 0) { output = null; }
         if (children === void 0) { children = []; }
         if (workgroupDelayInSeconds === void 0) { workgroupDelayInSeconds = 0; }
+        if (childrenDelayInSeconds === void 0) { childrenDelayInSeconds = 0; }
         return __awaiter(this, void 0, void 0, function () {
-            var taskCollection, task, update, runAfter, pending_2, _i, children_2, child, _a, pending_1, child, canCreate, parentRealIds, _loop_1, _b, _c, parentId, createData, childTask, lastPendingCount, _d, children_3, child, error_1, randTimeout_1, directChildren, _e, directChildren_1, child, runAfter, tasks, _f, tasks_1, task_1, resultTask;
-            return __generator(this, function (_g) {
-                switch (_g.label) {
+            var taskCollection, task, update, runAfter, pending_2, _i, children_2, child, _a, pending_1, child, canCreate, parentRealIds, _loop_1, _b, _c, parentId, createData, childTask, lastPendingCount, _d, children_3, child, cdRunAfter, children_5, _e, children_4, child, applyDelay, childRunAfter, error_1, randTimeout_1, directChildren, _f, directChildren_1, child, runAfter, tasks, _g, tasks_1, task_1, resultTask;
+            return __generator(this, function (_h) {
+                switch (_h.label) {
                     case 0: return [4 /*yield*/, (0, database_1.default)()];
                     case 1:
-                        taskCollection = (_g.sent()).taskCollection;
+                        taskCollection = (_h.sent()).taskCollection;
                         return [4 /*yield*/, Task.findById(id)];
                     case 2:
-                        task = _g.sent();
+                        task = _h.sent();
                         if (!task) {
                             throw new Error('Unable to find task!');
                         }
@@ -813,7 +817,7 @@ var Task = /** @class */ (function () {
                             // release (with error) any incomplete tasks with same key in the same channel (duplication prevention)
                         ];
                     case 3:
-                        _g.sent();
+                        _h.sent();
                         if (!task.key) return [3 /*break*/, 5];
                         return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, channel: task.channel, key: task.key }, {
                                 $set: update,
@@ -821,7 +825,7 @@ var Task = /** @class */ (function () {
                                 $push: { errors: error }
                             })];
                     case 4:
-                        _g.sent();
+                        _h.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:release:key', {
                             channel: task.channel,
                             key: task.key,
@@ -836,16 +840,16 @@ var Task = /** @class */ (function () {
                                 remainingAttempts: task.remainingAttempts - 1
                             }
                         });
-                        _g.label = 5;
+                        _h.label = 5;
                     case 5:
                         if (!(task.remainingAttempts >= 1)) return [3 /*break*/, 7];
                         return [4 /*yield*/, Task.triggerExamine(task, task.errorDelayInSeconds)];
                     case 6:
-                        _g.sent();
-                        _g.label = 7;
-                    case 7: return [3 /*break*/, 25];
+                        _h.sent();
+                        _h.label = 7;
+                    case 7: return [3 /*break*/, 30];
                     case 8:
-                        _g.trys.push([8, 15, , 17]);
+                        _h.trys.push([8, 20, , 22]);
                         if (!(children && children.length > 0)) return [3 /*break*/, 13];
                         pending_2 = [];
                         for (_i = 0, children_2 = children; _i < children_2.length; _i++) {
@@ -855,7 +859,7 @@ var Task = /** @class */ (function () {
                             }
                         }
                         _a = 0, pending_1 = pending_2;
-                        _g.label = 9;
+                        _h.label = 9;
                     case 9:
                         if (!(_a < pending_1.length)) return [3 /*break*/, 12];
                         child = pending_1[_a];
@@ -893,10 +897,10 @@ var Task = /** @class */ (function () {
                         delete createData._parent_ids;
                         return [4 /*yield*/, Task.fromData(task.taskGroupId, createData, true)];
                     case 10:
-                        childTask = _g.sent();
+                        childTask = _h.sent();
                         child.taskGroupId = task.taskGroupId;
                         child._id = childTask._id;
-                        _g.label = 11;
+                        _h.label = 11;
                     case 11:
                         _a++;
                         return [3 /*break*/, 9];
@@ -912,8 +916,39 @@ var Task = /** @class */ (function () {
                         if (lastPendingCount <= pending_2.length) {
                             throw Error("spawnChildren pending count did not decrease on iteration - something is wrong!");
                         }
-                        _g.label = 13;
-                    case 13: 
+                        _h.label = 13;
+                    case 13:
+                        if (!childrenDelayInSeconds) return [3 /*break*/, 18];
+                        cdRunAfter = luxon_1.DateTime.utc().plus({ seconds: childrenDelayInSeconds });
+                        return [4 /*yield*/, Task.findChildren(id)];
+                    case 14:
+                        children_5 = _h.sent();
+                        _e = 0, children_4 = children_5;
+                        _h.label = 15;
+                    case 15:
+                        if (!(_e < children_4.length)) return [3 /*break*/, 18];
+                        child = children_4[_e];
+                        applyDelay = false;
+                        if (child.runAfter) {
+                            childRunAfter = luxon_1.DateTime.fromJSDate(child.runAfter);
+                            if (childRunAfter < cdRunAfter) {
+                                applyDelay = true;
+                            }
+                        }
+                        else {
+                            applyDelay = true;
+                        }
+                        if (!applyDelay) return [3 /*break*/, 17];
+                        return [4 /*yield*/, taskCollection.updateOne({ _id: child._id }, { $set: {
+                                    runAfter: cdRunAfter.toJSDate
+                                } })];
+                    case 16:
+                        _h.sent();
+                        _h.label = 17;
+                    case 17:
+                        _e++;
+                        return [3 /*break*/, 15];
+                    case 18: 
                     // Mark task as complete
                     return [4 /*yield*/, taskCollection.updateOne({ _id: id }, {
                             $set: {
@@ -927,20 +962,20 @@ var Task = /** @class */ (function () {
                                 runAfter: null
                             }
                         })];
-                    case 14:
+                    case 19:
                         // Mark task as complete
-                        _g.sent();
-                        return [3 /*break*/, 17];
-                    case 15:
-                        error_1 = _g.sent();
+                        _h.sent();
+                        return [3 /*break*/, 22];
+                    case 20:
+                        error_1 = _h.sent();
                         // Remove any created children
                         return [4 /*yield*/, taskCollection.deleteMany({ parentIds: { $in: [id] } })];
-                    case 16:
+                    case 21:
                         // Remove any created children
-                        _g.sent();
+                        _h.sent();
                         throw error_1;
-                    case 17:
-                        if (!task.key) return [3 /*break*/, 19];
+                    case 22:
+                        if (!task.key) return [3 /*break*/, 24];
                         return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, channel: task.channel, key: task.key }, {
                                 $set: {
                                     assignedTo: null,
@@ -951,8 +986,8 @@ var Task = /** @class */ (function () {
                                     remainingAttempts: 0
                                 }
                             })];
-                    case 18:
-                        _g.sent();
+                    case 23:
+                        _h.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:release:key', {
                             channel: task.channel,
                             key: task.key,
@@ -965,63 +1000,63 @@ var Task = /** @class */ (function () {
                                 remainingAttempts: 0
                             }
                         });
-                        _g.label = 19;
-                    case 19:
+                        _h.label = 24;
+                    case 24:
                         randTimeout_1 = Math.floor(Math.random() * 1000);
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, randTimeout_1); })];
-                    case 20:
-                        _g.sent();
-                        return [4 /*yield*/, Task.findChildren(id)];
-                    case 21:
-                        directChildren = _g.sent();
-                        _e = 0, directChildren_1 = directChildren;
-                        _g.label = 22;
-                    case 22:
-                        if (!(_e < directChildren_1.length)) return [3 /*break*/, 25];
-                        child = directChildren_1[_e];
-                        return [4 /*yield*/, Task.syncParentsComplete(child)];
-                    case 23:
-                        _g.sent();
-                        _g.label = 24;
-                    case 24:
-                        _e++;
-                        return [3 /*break*/, 22];
                     case 25:
-                        if (!(workgroupDelayInSeconds && task.workgroup)) return [3 /*break*/, 32];
+                        _h.sent();
+                        return [4 /*yield*/, Task.findChildren(id)];
+                    case 26:
+                        directChildren = _h.sent();
+                        _f = 0, directChildren_1 = directChildren;
+                        _h.label = 27;
+                    case 27:
+                        if (!(_f < directChildren_1.length)) return [3 /*break*/, 30];
+                        child = directChildren_1[_f];
+                        return [4 /*yield*/, Task.syncParentsComplete(child)];
+                    case 28:
+                        _h.sent();
+                        _h.label = 29;
+                    case 29:
+                        _f++;
+                        return [3 /*break*/, 27];
+                    case 30:
+                        if (!(workgroupDelayInSeconds && task.workgroup)) return [3 /*break*/, 37];
                         runAfter = luxon_1.DateTime.utc().plus({ seconds: workgroupDelayInSeconds }).toJSDate();
                         return [4 /*yield*/, taskCollection.updateMany({ isComplete: false, workgroup: task.workgroup }, {
                                 $set: {
                                     runAfter: runAfter
                                 }
                             })];
-                    case 26:
-                        _g.sent();
-                        return [4 /*yield*/, Task.findAllIncompleteInWorkgroup(task.workgroup)];
-                    case 27:
-                        tasks = _g.sent();
-                        _f = 0, tasks_1 = tasks;
-                        _g.label = 28;
-                    case 28:
-                        if (!(_f < tasks_1.length)) return [3 /*break*/, 31];
-                        task_1 = tasks_1[_f];
-                        return [4 /*yield*/, Task.triggerExamine(task_1, workgroupDelayInSeconds)];
-                    case 29:
-                        _g.sent();
-                        _g.label = 30;
-                    case 30:
-                        _f++;
-                        return [3 /*break*/, 28];
                     case 31:
+                        _h.sent();
+                        return [4 /*yield*/, Task.findAllIncompleteInWorkgroup(task.workgroup)];
+                    case 32:
+                        tasks = _h.sent();
+                        _g = 0, tasks_1 = tasks;
+                        _h.label = 33;
+                    case 33:
+                        if (!(_g < tasks_1.length)) return [3 /*break*/, 36];
+                        task_1 = tasks_1[_g];
+                        return [4 /*yield*/, Task.triggerExamine(task_1, workgroupDelayInSeconds)];
+                    case 34:
+                        _h.sent();
+                        _h.label = 35;
+                    case 35:
+                        _g++;
+                        return [3 /*break*/, 33];
+                    case 36:
                         realtime_1.default.emit(task.taskGroupId + '', 'workgroup:delay', {
                             workgroup: task.workgroup,
                             update: {
                                 runAfter: runAfter
                             }
                         });
-                        _g.label = 32;
-                    case 32: return [4 /*yield*/, Task.findById(id)];
-                    case 33:
-                        resultTask = _g.sent();
+                        _h.label = 37;
+                    case 37: return [4 /*yield*/, Task.findById(id)];
+                    case 38:
+                        resultTask = _h.sent();
                         realtime_1.default.emit(task.taskGroupId + '', 'task:update', resultTask);
                         return [2 /*return*/, resultTask];
                 }
@@ -1286,7 +1321,6 @@ var Task = /** @class */ (function () {
                         return [4 /*yield*/, messenger.isExecutePending(task.executeMessageId)];
                     case 4:
                         messagePending = _a.sent();
-                        console.log("~~ dbg executeMessagePending", messagePending, task.executeMessageId);
                         if (!!messagePending) return [3 /*break*/, 9];
                         return [4 /*yield*/, operatorCollection.findOne({ channel: task.channel })];
                     case 5:

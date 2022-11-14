@@ -19,6 +19,9 @@ import TaskChild from "./TaskChild";
  *         workgroupDelayInSeconds:
  *           type: integer
  *           description: When present all tasks with the same workgroup will be paused for this many seconds.  Used to manage rate limits in 3rd party APIs.
+ *         childrenDelayInSeconds:
+ *           type: integer
+ *           description: When present all child tasks will be paused for at least this many seconds.  Existing runAfter values that are too short will be increaased to meet the given delay.
  *         children:
  *           type: array
  *           items:
@@ -210,7 +213,7 @@ export default class Task {
     static retryById(id: ObjectId, remainingAttempts?: number): Promise<Task>;
     static pluckById(id: ObjectId): Promise<Task>;
     static acquireInChannel(channel: string, workerId: string): Promise<Task | null>;
-    static release(id: ObjectId, workerId: string, error?: any, output?: any, children?: TaskChild[], workgroupDelayInSeconds?: number): Promise<Task>;
+    static release(id: ObjectId, workerId: string, error?: any, output?: any, children?: TaskChild[], workgroupDelayInSeconds?: number, childrenDelayInSeconds?: number): Promise<Task>;
     static syncParentsComplete(task: Task): Promise<void>;
     static getParentsData(task: Task): Promise<any>;
     static syncParents(limit?: number): Promise<number>;

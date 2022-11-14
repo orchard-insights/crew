@@ -264,7 +264,7 @@ var Operator = /** @class */ (function () {
     };
     Operator.execute = function (taskId) {
         return __awaiter(this, void 0, void 0, function () {
-            var executeTask, channel, operatorCollection, operator, operatorRequestConfig, workerId, task, parents, config, response, _a, error, output, children, error_1;
+            var executeTask, channel, operatorCollection, operator, operatorRequestConfig, workerId, task, parents, config, response, _a, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, Task_1.default.findById(taskId)];
@@ -318,9 +318,9 @@ var Operator = /** @class */ (function () {
                         ];
                     case 9:
                         response = _b.sent();
-                        _a = response.data, error = _a.error, output = _a.output, children = _a.children;
+                        _a = response.data, error = _a.error, output = _a.output, children = _a.children, workgroupDelayInSeconds = _a.workgroupDelayInSeconds, childrenDelayInSeconds = _a.childrenDelayInSeconds;
                         // Release the task
-                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error, output, children)];
+                        return [4 /*yield*/, Task_1.default.release(task._id, workerId, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds)];
                     case 10:
                         // Release the task
                         _b.sent();

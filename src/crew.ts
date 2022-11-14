@@ -1058,7 +1058,8 @@ function crew (options: CrewOptions) : express.Router {
         }
         const workerId = req.body.workerId
         const workgroupDelayInSeconds = req.body.workgroupDelayInSeconds || 0
-        const releaseResult = await Task.release(new ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds)
+        const childrenDelayInSeconds = req.body.childrenDelayInSeconds || 0
+        const releaseResult = await Task.release(new ObjectId(req.params.id), workerId, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds)
         res.json(releaseResult)
       }
     ))

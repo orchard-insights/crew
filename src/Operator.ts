@@ -192,9 +192,9 @@ export default class Operator {
             const response = await axios.post(operator.url, {input: task.input, parents, taskId: task._id}, config)
 
             // Unpack response
-            const { error, output, children } = response.data
+            const { error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds } = response.data
             // Release the task
-            await Task.release(task._id, workerId, error, output, children)
+            await Task.release(task._id, workerId, error, output, children, workgroupDelayInSeconds, childrenDelayInSeconds)
           } catch (error) {
             console.error('~~ Operator error', error)
             if (axios.isAxiosError(error) && error.response && error.response.data && error.response.data.error) {
